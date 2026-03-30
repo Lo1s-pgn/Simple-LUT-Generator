@@ -77,7 +77,7 @@ sudo make install SKIP_RESOLVE_OFX_CACHE_PURGE=1
 
 ## macOS Gatekeeper (unsigned / not notarized builds)
 
-Prebuilt bundles are typically **unsigned** and may be blocked by Gatekeeper.
+Prebuilt bundles may be blocked by Gatekeeper.
 
 ### Method 1 — Terminal (common approach)
 
