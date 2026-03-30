@@ -177,8 +177,16 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     const std::string path = LSPLutGenShowSaveLUTDialog(nullptr);
     if (path.empty())
         return;
-    if (!lspLutGenWriteCubeFile(path, nExport, cubeWrite))
+    if (!lspLutGenWriteCubeFile(path, nExport, cubeWrite)) {
+        const std::string detail = std::string("Could not save the LUT file:\n") + path
+            + "\n\nCheck folder permissions, disk space, and that the path is writable.";
+        try {
+            sendMessage(OFX::Message::eMessageError, "lspLutGenWriteCubeFailed", detail);
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("write_cube_failed_no_message_suite");
+        }
         LSP_LUTGEN_LOG_ERROR("write_cube_failed");
+    }
 }
 
 void LSPLutGeneratorPlugin::beginEdit() {
