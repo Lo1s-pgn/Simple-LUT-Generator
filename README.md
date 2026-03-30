@@ -7,7 +7,7 @@
 - **Generate LUT Table** — Draws the largest feasible n×n×n LUT table for the current resolution.
 - **Analyze & export LUT** — Uses **Source** (graded table), solves at max size, then optionally box-downsamples to **Export LUT size** when that size divides the max.
 - **Export LUT** — Writes a **`.cube`** file.
-- **Rendering:** **CPU** only, multithreaded where applicable.
+- **Rendering:** **CPU** only for now.
 
 ![Example node tree setup for LSP LUT Generator](./doc/node-tree.png)
 
@@ -26,22 +26,6 @@ make
 ```
 
 This writes **`plugin/version_gen.h`**, **`build/`** intermediates, and **`release/LSP_LutGenerator_<version>.ofx.bundle`**.
-
-### Release zip (binary for GitHub)
-
-Once:
-
-```bash
-chmod +x tools/make_release.sh.example
-```
-
-Each release:
-
-```bash
-./tools/make_release.sh.example
-```
-
-This runs **`make clean && make`**, then writes **`release/LSP_LutGenerator_<version>_macOS_universal.zip`** (the **`.ofx.bundle`**). Attach that zip as a **Release** asset on GitHub. For source code, use GitHub’s built-in **Source code (zip/tar.gz)** on the release page.
 
 ## Installation
 
