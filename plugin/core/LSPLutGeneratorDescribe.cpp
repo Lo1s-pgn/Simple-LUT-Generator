@@ -1,3 +1,4 @@
+// OFX parameter and clip descriptors (UI layout only; no render logic).
 #include "LSPLutGeneratorDescribe.h"
 #include "LSPLutGeneratorConstants.h"
 

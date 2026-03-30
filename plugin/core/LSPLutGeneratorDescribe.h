@@ -3,6 +3,7 @@
 
 #include "ofxsImageEffect.h"
 
+// Called from factory describeInContext for Filter and General.
 void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::ContextEnum p_Context);
 
 #endif

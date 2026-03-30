@@ -1,3 +1,4 @@
+// 2D LUT-table layout (n^3 samples in frame) and feasibility for 17/32/64/128 edge sizes.
 #include "LSPLutGeneratorPattern.h"
 #include <algorithm>
 #include <cmath>
@@ -16,6 +17,7 @@ float lspLutGenMinPixelsPerLatticeUnit(void) {
 }
 
 namespace {
+// Factors Tx=n*a, Ty=n*b with a*b=n so Tx*Ty=n^3; pick (a,b) closest to frame aspect.
 void chooseFactorsAB(int p_N, int p_FrameW, int p_FrameH, int* p_OutA, int* p_OutB) {
     *p_OutA = 1;
     *p_OutB = p_N;
@@ -78,6 +80,7 @@ int lspLutGenMaxFeasibleN(int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) 
     return 17;
 }
 
+// Pixel (px,py) → ref RGB for its cell; must match Generate and Analyze binning for same n.
 void lspLutGenPatternRGBA(int p_Px, int p_Py, const OfxRectI& p_B, int n, float p_Out[4]) {
     const int bw = p_B.x2 - p_B.x1;
     const int bh = p_B.y2 - p_B.y1;

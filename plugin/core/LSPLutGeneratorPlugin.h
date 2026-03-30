@@ -3,6 +3,7 @@
 
 #include "ofxsImageEffect.h"
 
+// Registers the effect with OFX; load/unload are no-ops (standard Support pattern).
 class LSPLutGeneratorPluginFactory : public OFX::PluginFactoryHelper<LSPLutGeneratorPluginFactory> {
 public:
     LSPLutGeneratorPluginFactory();

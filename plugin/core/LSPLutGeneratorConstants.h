@@ -3,6 +3,7 @@
 
 #include "version_gen.h"
 
+/* Identity and OFX capability flags (see Makefile-generated version_gen.h). */
 #define kPluginName "LSP LUT Generator " PLUGIN_VERSION_STR
 #define kPluginGrouping "LSP - Color"
 #define kPluginDescription "LSP LUT Generator — 3D LUT table and single-input LUT analysis (OFX)."

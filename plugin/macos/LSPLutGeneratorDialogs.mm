@@ -1,3 +1,4 @@
+// Objective-C++: save panel for Export LUT; hop to main queue when called from OFX worker.
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #include "LSPLutGeneratorDialogs.h"

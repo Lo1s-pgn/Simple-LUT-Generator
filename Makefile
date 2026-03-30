@@ -21,7 +21,7 @@ RESOURCES_DIR = $(OFX_BUNDLE)/Contents/Resources
 # Vendored minimal SDK in-repo; override with OFX_SDK_PATH=/path/to/sdk if needed.
 OFX_SDK_PATH ?= openfx-sdk
 ARCH_FLAGS = -arch arm64 -arch x86_64
-CXXFLAGS = -std=c++20 -O2 -Wno-dynamic-exception-spec -fvisibility=hidden -Iplugin -Iplugin/core -Iplugin/presets -I"$(OFX_SDK_PATH)/include" -I"$(OFX_SDK_PATH)/Support/include" -I"$(OFX_SDK_PATH)/Support/Library" $(ARCH_FLAGS)
+CXXFLAGS = -std=c++20 -O2 -Wno-dynamic-exception-spec -fvisibility=hidden -Iplugin -Iplugin/core -Iplugin/macos -I"$(OFX_SDK_PATH)/include" -I"$(OFX_SDK_PATH)/Support/include" -I"$(OFX_SDK_PATH)/Support/Library" $(ARCH_FLAGS)
 LDFLAGS = -bundle -fvisibility=hidden -framework Foundation -framework AppKit -Wl,-rpath,@loader_path $(ARCH_FLAGS)
 
 PLUGIN_ICON_NAME := com.LSP.LutGenerator.$(PLUGIN_DISPLAY).png
@@ -86,7 +86,7 @@ $(VERSION_GEN) $(BUILDDIR)/Info.plist: Info.plist.in $(VERSION_FILE) | $(BUILDDI
 	    -e "s|@OFX_EXECUTABLE_NAME@|$$exe|g" Info.plist.in > $(BUILDDIR)/Info.plist; \
 	echo "Generated $(VERSION_GEN) + $(BUILDDIR)/Info.plist ($$display, $$exe)"
 
-$(BUILDDIR)/LSPLutGeneratorPlugin.o: plugin/core/LSPLutGeneratorPlugin.cpp $(VERSION_GEN) plugin/core/LSPLutGeneratorPlugin.h plugin/core/LSPLutGeneratorDescribe.h plugin/core/LSPLutGeneratorProcessor.h plugin/core/LSPLutGeneratorConstants.h plugin/core/LSPLutGeneratorCube.h plugin/core/LSPLutGeneratorLog.h plugin/presets/LSPLutGeneratorDialogs.h plugin/core/LSPLutGeneratorPattern.h | $(BUILDDIR)
+$(BUILDDIR)/LSPLutGeneratorPlugin.o: plugin/core/LSPLutGeneratorPlugin.cpp $(VERSION_GEN) plugin/core/LSPLutGeneratorPlugin.h plugin/core/LSPLutGeneratorDescribe.h plugin/core/LSPLutGeneratorProcessor.h plugin/core/LSPLutGeneratorConstants.h plugin/core/LSPLutGeneratorCube.h plugin/core/LSPLutGeneratorLog.h plugin/macos/LSPLutGeneratorDialogs.h plugin/core/LSPLutGeneratorPattern.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 $(BUILDDIR)/LSPLutGeneratorDescribe.o: plugin/core/LSPLutGeneratorDescribe.cpp plugin/core/LSPLutGeneratorDescribe.h plugin/core/LSPLutGeneratorConstants.h | $(BUILDDIR)
@@ -101,7 +101,7 @@ $(BUILDDIR)/LSPLutGeneratorPattern.o: plugin/core/LSPLutGeneratorPattern.cpp plu
 $(BUILDDIR)/LSPLutGeneratorCube.o: plugin/core/LSPLutGeneratorCube.cpp plugin/core/LSPLutGeneratorCube.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
-$(BUILDDIR)/LSPLutGeneratorDialogs.o: plugin/presets/LSPLutGeneratorDialogs.mm plugin/presets/LSPLutGeneratorDialogs.h | $(BUILDDIR)
+$(BUILDDIR)/LSPLutGeneratorDialogs.o: plugin/macos/LSPLutGeneratorDialogs.mm plugin/macos/LSPLutGeneratorDialogs.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 $(BUILDDIR)/ofxsCore.o: $(OFX_SDK_PATH)/Support/Library/ofxsCore.cpp | $(BUILDDIR)

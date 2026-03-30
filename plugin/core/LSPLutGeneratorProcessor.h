@@ -3,6 +3,7 @@
 
 #include "ofxsProcessing.h"
 
+// OFX::ImageProcessor subclass — one tile/window at a time on worker threads.
 class LSPLutGeneratorProcessor : public OFX::ImageProcessor {
 public:
     explicit LSPLutGeneratorProcessor(OFX::ImageEffect& p_Effect);

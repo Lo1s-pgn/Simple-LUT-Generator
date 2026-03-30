@@ -1,3 +1,4 @@
+// Multi-threaded pixel worker: Generate writes pattern; Analyze copies source through.
 #include "LSPLutGeneratorProcessor.h"
 #include "LSPLutGeneratorPattern.h"
 #include "LSPLutGeneratorConstants.h"
@@ -10,6 +11,7 @@ LSPLutGeneratorProcessor::LSPLutGeneratorProcessor(OFX::ImageEffect& p_Effect)
     , _generateLutN(64) {}
 
 namespace {
+// Analyze mode: passthrough float RGBA within the render window.
 void copyRGBAWindow(OFX::Image* p_Src, OFX::Image* p_Dst, const OfxRectI& p_Window) {
     if (!p_Src || !p_Dst)
         return;

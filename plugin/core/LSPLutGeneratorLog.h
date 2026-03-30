@@ -1,5 +1,5 @@
 #pragma once
-// Session header at instance create; thread-safe append for errors. Log under ~/Library/Application Support/LSP/.
+/* Session header on plug-in construct; errors append with mutex. ~/Library/Application Support/LSP/LutGenerator.log */
 #include <chrono>
 #include <cerrno>
 #include <cstdint>

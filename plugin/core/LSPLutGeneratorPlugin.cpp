@@ -1,3 +1,4 @@
+// OFX plug-in instance: CPU render (LUT table fill or passthrough), Export .cube from Analyze.
 #include "LSPLutGeneratorPlugin.h"
 #include "LSPLutGeneratorDescribe.h"
 #include "LSPLutGeneratorProcessor.h"
@@ -105,6 +106,7 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
 
     if (p_ParamName != "exportLut")
         return;
+    // Build at nSolve (same lattice as Generate); shrink to export size if needed (box or trilinear).
     const double t = timeLineGetTime();
     int mode = 0;
     m_OperationMode->getValue(mode);
@@ -190,6 +192,7 @@ void LSPLutGeneratorPlugin::endChanged(OFX::InstanceChangeReason p_Reason) {
 }
 
 void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
+    // Generate: fill with pattern at max feasible N. Analyze: copy source → output.
     std::unique_ptr<OFX::Image> dst(m_DstClip->fetchImage(p_Args.time));
     std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(p_Args.time));
     if (!dst.get() || !src.get() || !dst->getPixelData() || !src->getPixelData()) {

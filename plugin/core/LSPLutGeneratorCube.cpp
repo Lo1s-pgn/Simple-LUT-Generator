@@ -1,3 +1,4 @@
+// 3D LUT: accumulate graded RGB per pattern cell, resize cube, write Iridas .cube text.
 #include "LSPLutGeneratorCube.h"
 #include "LSPLutGeneratorPattern.h"
 #include "ofxsImageEffect.h"
@@ -59,6 +60,7 @@ void sampleCubeRgbTriLinear(const float* p_Cube, int p_N, double p_Fr, double p_
 }
 } // namespace
 
+// Bin pixels by pattern ref at p_N; average source RGB per cell (empty → identity ramp).
 bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba) {
     if (!p_GradedStrip || p_N < 2)
         return false;
@@ -125,6 +127,7 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
     return true;
 }
 
+// Box average over s×s×s source voxels per output cell; requires p_NSrc % p_NDst == 0.
 bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba) {
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2 || (p_NSrc % p_NDst) != 0)
         return false;
@@ -162,6 +165,7 @@ bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst,
     return true;
 }
 
+// Domain-aligned trilinear sample (e.g. 128 → 17 when box downsample does not apply).
 bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba) {
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2)
         return false;
@@ -191,6 +195,7 @@ bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int 
     return true;
 }
 
+// Iridas .cube text: DOMAIN 0–1, LUT_3D_SIZE, then r-major RGB rows.
 bool lspLutGenWriteCubeFile(const std::string& p_Path, int p_N, const float* p_BufferRgba) {
     if (!p_BufferRgba || p_N < 2)
         return false;
