@@ -29,35 +29,25 @@ void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::Cont
 
     OFX::ChoiceParamDescriptor* mode = p_Desc.defineChoiceParam("operationMode");
     mode->setLabels("Operation", "Operation", "Operation mode.");
-    mode->setHint("Generate LUT Table: max feasible n^3 (16-128) for this frame. Analyze: export size divides max; .cube may downsample. Refresh after timeline resize.");
+    mode->setHint("Generate: auto LUT table at the largest feasible size for the frame. Analyze: pass-through; LUT size applies to Export only.");
     mode->appendOption("Generate LUT Table");
     mode->appendOption("Analyze & export LUT");
     mode->setDefault(0);
     mode->setAnimates(false);
     mode->setParent(*mainG);
 
-    OFX::StringParamDescriptor* maxInfo = p_Desc.defineStringParam("maxLutPatternInfo");
-    maxInfo->setLabels("Max LUT size", "Max LUT size", "Generate LUT Table uses this n^3; Analyze solves this n^3 then may downsample. Source RoD or project size; click Refresh after timeline resize.");
-    maxInfo->setDefault("");
-    maxInfo->setAnimates(false);
-    maxInfo->setParent(*mainG);
-
-    OFX::PushButtonParamDescriptor* refreshPb = p_Desc.definePushButtonParam("lutRefreshUi");
-    refreshPb->setLabels("Refresh", "Refresh", "Re-read Source / project size and update Max LUT size + export clamp.");
-    refreshPb->setParent(*mainG);
-
     OFX::ChoiceParamDescriptor* lutSize = p_Desc.defineChoiceParam("lutExportSize");
-    lutSize->setLabels("Export LUT size", "Export LUT size", "Analyze only: .cube dimension. Must divide max n for this frame. Use Refresh after changing timeline resolution.");
-    lutSize->appendOption("16x16x16");
-    lutSize->appendOption("32x32x32");
-    lutSize->appendOption("64x64x64");
-    lutSize->appendOption("128x128x128");
+    lutSize->setLabels("Export LUT size", "Export LUT size", "Analyze mode only: edge length of the exported .cube (17, 32, 64, or 128).");
+    lutSize->appendOption("17 × 17 × 17");
+    lutSize->appendOption("32 × 32 × 32");
+    lutSize->appendOption("64 × 64 × 64");
+    lutSize->appendOption("128 × 128 × 128");
     lutSize->setDefault(1);
     lutSize->setAnimates(false);
     lutSize->setParent(*mainG);
 
     OFX::PushButtonParamDescriptor* exportPb = p_Desc.definePushButtonParam("exportLut");
-    exportPb->setLabels("Export LUT", "Export LUT", "Analyze: build LUT at max capture resolution, then downsample if needed; save .cube.");
+    exportPb->setLabels("Export LUT", "Export LUT", "Analyze mode: save the analyzed LUT as a .cube file.");
     exportPb->setParent(*mainG);
 
     OFX::GroupParamDescriptor* supportG = addGroup(p_Desc, "lutGenSupportGroup", "SUPPORT", "Info and log.", false);
@@ -68,13 +58,9 @@ void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::Cont
         creditsParam->setStringType(OFX::eStringTypeLabel);
         creditsParam->setAnimates(false);
         creditsParam->setParent(*supportG);
-        OFX::PushButtonParamDescriptor* reportBugBtn = p_Desc.definePushButtonParam("lutGenReportBug");
-        reportBugBtn->setLabels("Report Bug", "Report Bug", "Report Bug");
-        reportBugBtn->setHint("Report a bug.");
-        reportBugBtn->setParent(*supportG);
         OFX::PushButtonParamDescriptor* helpBtn = p_Desc.definePushButtonParam("lutGenHelp");
         helpBtn->setLabels("Help", "Help", "Help");
-        helpBtn->setHint("Help and documentation.");
+        helpBtn->setHint("Open the project repository on GitHub.");
         helpBtn->setParent(*supportG);
         OFX::PushButtonParamDescriptor* openLogBtn = p_Desc.definePushButtonParam("lutGenOpenLog");
         openLogBtn->setLabels("Open Log", "Open Log", "Open Log");

@@ -7,39 +7,13 @@
 #include "LSPLutGeneratorLog.h"
 #include "LSPLutGeneratorPattern.h"
 #include "version_gen.h"
+#include "ofxsCore.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
-
-namespace {
-int largestValidExportChoiceIndex(int p_NMax) {
-    for (int i = kLutGenChoiceCount - 1; i >= 0; --i) {
-        const int n = lspLutGenLutSizeFromChoiceIndex(i);
-        if (lspLutGenExportSizeValid(p_NMax, n))
-            return i;
-    }
-    return 0;
-}
-
-struct LutUiSyncGuard {
-    bool& _flag;
-    bool _skip;
-    explicit LutUiSyncGuard(bool& p_Flag)
-        : _flag(p_Flag)
-        , _skip(p_Flag) {
-        if (!_skip)
-            _flag = true;
-    }
-    ~LutUiSyncGuard() {
-        if (!_skip)
-            _flag = false;
-    }
-    bool skip() const { return _skip; }
-};
-} // namespace
 
 class LSPLutGeneratorPlugin : public OFX::ImageEffect {
 public:
@@ -48,21 +22,16 @@ public:
     void render(const OFX::RenderArguments& p_Args) override;
     void beginEdit() override;
     void changedParam(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ParamName) override;
-    void changedClip(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ClipName) override;
     void endChanged(OFX::InstanceChangeReason p_Reason) override;
 
 private:
-    bool getFrameDimensionsForLut(double p_Time, int& p_OutW, int& p_OutH) const;
-    void syncLutSizeConstraintUi(double p_Time);
-    void updateAnalyzeControlsEnabled(double p_Time);
+    void updateModeDependentUi();
 
     OFX::Clip* m_DstClip;
     OFX::Clip* m_SrcClip;
     OFX::ChoiceParam* m_OperationMode;
-    OFX::StringParam* m_MaxLutPatternInfo;
     OFX::ChoiceParam* m_LutExportSize;
     OFX::PushButtonParam* m_ExportLut;
-    bool m_InLutUiSync;
 };
 
 LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
@@ -70,16 +39,12 @@ LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
     , m_DstClip(nullptr)
     , m_SrcClip(nullptr)
     , m_OperationMode(nullptr)
-    , m_MaxLutPatternInfo(nullptr)
     , m_LutExportSize(nullptr)
-    , m_ExportLut(nullptr)
-    , m_InLutUiSync(false) {
+    , m_ExportLut(nullptr) {
     m_DstClip = fetchClip(kOfxImageEffectOutputClipName);
     m_SrcClip = fetchClip(kOfxImageEffectSimpleSourceClipName);
     m_OperationMode = fetchChoiceParam("operationMode");
-    m_MaxLutPatternInfo = fetchStringParam("maxLutPatternInfo");
     m_LutExportSize = fetchChoiceParam("lutExportSize");
-    (void)fetchPushButtonParam("lutRefreshUi");
     m_ExportLut = fetchPushButtonParam("exportLut");
 
     OFX::StringParam* creditsLabel = fetchStringParam("lutGenCreditsLabel");
@@ -103,74 +68,28 @@ LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
         LSP_LUTGEN_LOG_SESSION_START(kPluginName, versionStr, hostName, hostLabel, hostVersion, buildInfo, bundlePath, "");
     }
 
-    const double t0 = timeLineGetTime();
-    syncLutSizeConstraintUi(t0);
-    updateAnalyzeControlsEnabled(t0);
+    updateModeDependentUi();
 }
 
-bool LSPLutGeneratorPlugin::getFrameDimensionsForLut(double p_Time, int& p_OutW, int& p_OutH) const {
-    p_OutW = 0;
-    p_OutH = 0;
-    if (m_SrcClip->isConnected()) {
-        const OfxRectD rod = m_SrcClip->getRegionOfDefinition(p_Time);
-        p_OutW = static_cast<int>(std::ceil(rod.x2 - rod.x1));
-        p_OutH = static_cast<int>(std::ceil(rod.y2 - rod.y1));
-    }
-    if (p_OutW < 1 || p_OutH < 1) {
-        const OfxPointD ps = getProjectSize();
-        p_OutW = static_cast<int>(std::lround(ps.x));
-        p_OutH = static_cast<int>(std::lround(ps.y));
-    }
-    return p_OutW >= 1 && p_OutH >= 1;
-}
-
-void LSPLutGeneratorPlugin::updateAnalyzeControlsEnabled(double p_Time) {
+void LSPLutGeneratorPlugin::updateModeDependentUi() {
     int mode = 0;
-    m_OperationMode->getValueAtTime(p_Time, mode);
+    m_OperationMode->getValue(mode);
     const bool analyze = (mode == kOperationModeAnalyze);
     m_LutExportSize->setEnabled(analyze);
     m_ExportLut->setEnabled(analyze);
 }
 
-void LSPLutGeneratorPlugin::syncLutSizeConstraintUi(double p_Time) {
-    LutUiSyncGuard guard(m_InLutUiSync);
-    if (guard.skip())
-        return;
-
-    int fw = 1;
-    int fh = 1;
-    if (!getFrameDimensionsForLut(p_Time, fw, fh))
-        return;
-
-    const float minU = lspLutGenMinPixelsPerLatticeUnit();
-    const int nMax = lspLutGenMaxFeasibleN(fw, fh, minU);
-
-    char info[64];
-    std::snprintf(info, sizeof(info), "%dx%dx%d", nMax, nMax, nMax);
-    m_MaxLutPatternInfo->setValueAtTime(p_Time, std::string(info));
-
-    int idx = 0;
-    m_LutExportSize->getValueAtTime(p_Time, idx);
-    if (idx < 0)
-        idx = 0;
-    if (idx >= kLutGenChoiceCount)
-        idx = kLutGenChoiceCount - 1;
-    const int currentN = lspLutGenLutSizeFromChoiceIndex(idx);
-    if (!lspLutGenExportSizeValid(nMax, currentN)) {
-        const int newIdx = largestValidExportChoiceIndex(nMax);
-        if (newIdx != idx)
-            m_LutExportSize->setValueAtTime(p_Time, newIdx);
-    }
-}
-
 void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ParamName) {
-    if (p_ParamName == "lutRefreshUi") {
-        syncLutSizeConstraintUi(p_Args.time);
-        updateAnalyzeControlsEnabled(p_Args.time);
+    (void)p_Args;
+    if (p_ParamName == "lutGenHelp") {
+#ifdef __APPLE__
+        const char* kRepoUrl = "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX";
+        std::string cmd = std::string("open \"") + kRepoUrl + "\"";
+        if (std::system(cmd.c_str()) != 0)
+            LSP_LUTGEN_LOG_ERROR("open_help_url_failed");
+#endif
         return;
     }
-    if (p_ParamName == "lutGenReportBug" || p_ParamName == "lutGenHelp")
-        return;
     if (p_ParamName == "lutGenOpenLog") {
 #ifdef __APPLE__
         std::string path = LSPLutGeneratorLog::getLogPath();
@@ -182,30 +101,18 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
         return;
     }
 
-    syncLutSizeConstraintUi(p_Args.time);
     if (p_ParamName == "operationMode")
-        updateAnalyzeControlsEnabled(p_Args.time);
+        updateModeDependentUi();
 
     if (p_ParamName != "exportLut")
         return;
+    const double t = timeLineGetTime();
     int mode = 0;
-    m_OperationMode->getValueAtTime(p_Args.time, mode);
+    m_OperationMode->getValue(mode);
     if (mode != kOperationModeAnalyze)
         return;
 
-    int fw = 0;
-    int fh = 0;
-    if (!getFrameDimensionsForLut(p_Args.time, fw, fh))
-        return;
-    const int nMax = lspLutGenMaxFeasibleN(fw, fh, lspLutGenMinPixelsPerLatticeUnit());
-
-    int lutEdgeIdx = 0;
-    m_LutExportSize->getValueAtTime(p_Args.time, lutEdgeIdx);
-    const int nExport = lspLutGenLutSizeFromChoiceIndex(lutEdgeIdx);
-    if (!lspLutGenExportSizeValid(nMax, nExport))
-        return;
-
-    std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(p_Args.time));
+    std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(t));
     if (!src.get() || !src->getPixelData())
         return;
     if (src->getPixelDepth() != OFX::eBitDepthFloat)
@@ -213,50 +120,77 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     if (src->getPixelComponents() != OFX::ePixelComponentRGBA)
         return;
 
-    std::vector<float> cubeMax;
-    if (!lspLutGenBuildAnalyzedCube(src.get(), nMax, cubeMax))
+    const OfxRectI sb = src->getBounds();
+    const int fw = sb.x2 - sb.x1;
+    const int fh = sb.y2 - sb.y1;
+    if (fw < 1 || fh < 1)
         return;
 
-    const float* cubePtr = cubeMax.data();
-    std::vector<float> cubeDown;
-    if (nExport != nMax) {
-        if (!lspLutGenDownsampleCubeRgba(cubeMax.data(), nMax, nExport, cubeDown))
-            return;
-        cubePtr = cubeDown.data();
+    const float minU = lspLutGenMinPixelsPerLatticeUnit();
+
+    int lutEdgeIdx = 0;
+    m_LutExportSize->getValue(lutEdgeIdx);
+    if (lutEdgeIdx < 0)
+        lutEdgeIdx = 0;
+    const int nOpt = m_LutExportSize->getNOptions();
+    if (nOpt > 0 && lutEdgeIdx >= nOpt)
+        lutEdgeIdx = nOpt - 1;
+    else if (lutEdgeIdx >= kLutGenChoiceCount)
+        lutEdgeIdx = kLutGenChoiceCount - 1;
+    const int nExport = lspLutGenLutSizeFromChoiceIndex(lutEdgeIdx);
+
+    if (!lspLutGenFeasibleN(nExport, fw, fh, minU)) {
+        char detail[256];
+        std::snprintf(detail, sizeof(detail),
+            "The output frame (%d x %d pixels) is too small for a %dx%dx%d LUT.\n"
+            "Raise timeline resolution or pick a smaller LUT size.",
+            fw, fh, nExport, nExport, nExport);
+        try {
+            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportResolution", std::string(detail));
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_resolution_too_low_no_message_suite");
+        }
+        return;
     }
+
+    const int nCap = lspLutGenMaxFeasibleN(fw, fh, minU);
+    const int nSolve = (nCap >= 2) ? nCap : 2;
+
+    std::vector<float> cubeFull;
+    if (!lspLutGenBuildAnalyzedCube(src.get(), nSolve, cubeFull))
+        return;
+
+    const float* cubeWrite = cubeFull.data();
+    std::vector<float> cubeExport;
+    if (nExport != nSolve) {
+        if ((nSolve % nExport) == 0) {
+            if (!lspLutGenDownsampleCubeRgba(cubeFull.data(), nSolve, nExport, cubeExport))
+                return;
+        } else {
+            if (!lspLutGenResampleCubeRgbaTrilinear(cubeFull.data(), nSolve, nExport, cubeExport))
+                return;
+        }
+        cubeWrite = cubeExport.data();
+    }
+
     const std::string path = LSPLutGenShowSaveLUTDialog(nullptr);
     if (path.empty())
         return;
-    if (!lspLutGenWriteCubeFile(path, nExport, cubePtr))
+    if (!lspLutGenWriteCubeFile(path, nExport, cubeWrite))
         LSP_LUTGEN_LOG_ERROR("write_cube_failed");
 }
 
 void LSPLutGeneratorPlugin::beginEdit() {
     OFX::ImageEffect::beginEdit();
-    const double t = timeLineGetTime();
-    syncLutSizeConstraintUi(t);
-    updateAnalyzeControlsEnabled(t);
-}
-
-void LSPLutGeneratorPlugin::changedClip(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ClipName) {
-    OFX::ImageEffect::changedClip(p_Args, p_ClipName);
-    if (p_ClipName == kOfxImageEffectSimpleSourceClipName)
-        syncLutSizeConstraintUi(p_Args.time);
+    updateModeDependentUi();
 }
 
 void LSPLutGeneratorPlugin::endChanged(OFX::InstanceChangeReason p_Reason) {
-    if (m_InLutUiSync) {
-        OFX::ImageEffect::endChanged(p_Reason);
-        return;
-    }
-    const double t = timeLineGetTime();
-    syncLutSizeConstraintUi(t);
-    updateAnalyzeControlsEnabled(t);
+    updateModeDependentUi();
     OFX::ImageEffect::endChanged(p_Reason);
 }
 
 void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
-    // Do not call isConnected() on the output clip — hosts (including Resolve) may not define it like inputs.
     std::unique_ptr<OFX::Image> dst(m_DstClip->fetchImage(p_Args.time));
     std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(p_Args.time));
     if (!dst.get() || !src.get() || !dst->getPixelData() || !src->getPixelData()) {
@@ -279,14 +213,16 @@ void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
     const OfxRectI db = dst->getBounds();
     const int fw = db.x2 - db.x1;
     const int fh = db.y2 - db.y1;
-    const int nGen = lspLutGenMaxFeasibleN(fw, fh, lspLutGenMinPixelsPerLatticeUnit());
+    const float minU = lspLutGenMinPixelsPerLatticeUnit();
+    const int nCap = lspLutGenMaxFeasibleN(fw, fh, minU);
+    const int nUse = (nCap >= 2) ? nCap : 2;
 
     LSPLutGeneratorProcessor proc(*this);
     proc.setDstImg(dst.get());
     proc.setSrcImg(src.get());
     proc.setOperationMode(mode);
     proc.setDstFullBounds(dst->getBounds());
-    proc.setGenerateLutN(nGen);
+    proc.setGenerateLutN(nUse);
     proc.setRenderWindow(p_Args.renderWindow);
     proc.process();
 }

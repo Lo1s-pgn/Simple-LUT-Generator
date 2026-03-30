@@ -3,20 +3,12 @@
 #include <cmath>
 
 int lspLutGenLutSizeFromChoiceIndex(int p_Index) {
-    static const int kN[] = { 16, 32, 64, 128 };
+    static const int kN[] = { 17, 32, 64, 128 };
     if (p_Index < 0)
         p_Index = 0;
     if (p_Index >= kLutGenChoiceCount)
         p_Index = kLutGenChoiceCount - 1;
     return kN[p_Index];
-}
-
-bool lspLutGenExportSizeValid(int p_NMax, int p_NExport) {
-    if (p_NMax < 2 || p_NExport < 2)
-        return false;
-    if (p_NExport > p_NMax)
-        return false;
-    return (p_NMax % p_NExport) == 0;
 }
 
 float lspLutGenMinPixelsPerLatticeUnit(void) {
@@ -59,7 +51,7 @@ void gridDimensions(int p_N, int p_FrameW, int p_FrameH, int* p_OutTx, int* p_Ou
     *p_OutTy = p_N * b;
 }
 
-bool feasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
+bool feasibleNImpl(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
     if (p_N < 2 || p_FrameW < 1 || p_FrameH < 1)
         return false;
     int tx = 0;
@@ -73,13 +65,17 @@ bool feasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
 }
 } // namespace
 
+bool lspLutGenFeasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
+    return feasibleNImpl(p_N, p_FrameW, p_FrameH, p_MinPixelsPerUnit);
+}
+
 int lspLutGenMaxFeasibleN(int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
-    static const int kOrder[] = { 128, 64, 32, 16 };
+    static const int kOrder[] = { 128, 64, 32, 17 };
     for (int n : kOrder) {
-        if (feasibleN(n, p_FrameW, p_FrameH, p_MinPixelsPerUnit))
+        if (feasibleNImpl(n, p_FrameW, p_FrameH, p_MinPixelsPerUnit))
             return n;
     }
-    return 16;
+    return 17;
 }
 
 void lspLutGenPatternRGBA(int p_Px, int p_Py, const OfxRectI& p_B, int n, float p_Out[4]) {
@@ -95,12 +91,12 @@ void lspLutGenPatternRGBA(int p_Px, int p_Py, const OfxRectI& p_B, int n, float 
     chooseFactorsAB(n, bw, bh, &a, &b);
     const int Tx = n * a;
     const int Ty = n * b;
-    const float u = (static_cast<float>(p_Px - p_B.x1) + 0.5f) / static_cast<float>(bw);
-    const float v = (static_cast<float>(p_Py - p_B.y1) + 0.5f) / static_cast<float>(bh);
-    const float uCl = std::clamp(u, 0.0f, 1.0f);
-    const float vCl = std::clamp(v, 0.0f, 1.0f);
-    int ix = static_cast<int>(std::floor(uCl * static_cast<float>(Tx)));
-    int iy = static_cast<int>(std::floor(vCl * static_cast<float>(Ty)));
+    const double u = (static_cast<double>(p_Px - p_B.x1) + 0.5) / static_cast<double>(bw);
+    const double v = (static_cast<double>(p_Py - p_B.y1) + 0.5) / static_cast<double>(bh);
+    const double uCl = std::clamp(u, 0.0, 1.0);
+    const double vCl = std::clamp(v, 0.0, 1.0);
+    int ix = static_cast<int>(std::floor(uCl * static_cast<double>(Tx)));
+    int iy = static_cast<int>(std::floor(vCl * static_cast<double>(Ty)));
     ix = std::clamp(ix, 0, Tx - 1);
     iy = std::clamp(iy, 0, Ty - 1);
     const long long tll = static_cast<long long>(iy) * static_cast<long long>(Tx) + static_cast<long long>(ix);
@@ -110,12 +106,12 @@ void lspLutGenPatternRGBA(int p_Px, int p_Py, const OfxRectI& p_B, int n, float 
         t = 0;
     if (t >= n3)
         t = n3 - 1;
-    int ti = static_cast<int>(t);
-    const int ri = ti % n;
-    ti /= n;
-    const int gi = ti % n;
-    ti /= n;
-    const int bi = ti;
+    long long tq = t;
+    const int ri = static_cast<int>(tq % n);
+    tq /= n;
+    const int gi = static_cast<int>(tq % n);
+    tq /= n;
+    const int bi = static_cast<int>(tq);
     const float denom = static_cast<float>(n - 1);
     p_Out[0] = static_cast<float>(ri) / denom;
     p_Out[1] = static_cast<float>(gi) / denom;

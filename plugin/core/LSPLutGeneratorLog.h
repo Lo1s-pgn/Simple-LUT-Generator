@@ -172,7 +172,7 @@ inline void writeSessionStart(const std::string& pluginName,
     const std::string bufTime = getTimestamp("%a %b %d %H:%M:%S %Y");
 
     f << "------------------------------------------------------------\n";
-    f << "\t\t" << pluginName << " - 3D LUT table and LUT analysis\n";
+    f << "\t\t" << pluginName << "\n";
     f << "------------------------------------------------------------\n";
     f << "> Plugin Version\t: " << versionStr << "\n";
     f << "> Timestamp\t\t: " << bufTime << "\n";
