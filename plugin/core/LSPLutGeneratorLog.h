@@ -223,7 +223,6 @@ inline void writeErrorLine(const std::string& message) {
 
 } // namespace LSPLutGeneratorLog
 
-#define LSP_LUTGEN_LOG_INFO(...) ((void)0)
 #define LSP_LUTGEN_LOG_ERROR(msg) LSPLutGeneratorLog::writeErrorLine(std::string(msg))
 #define LSP_LUTGEN_LOG_SESSION_START(n, v, hn, hl, hver, build, bundle, gpu) \
     LSPLutGeneratorLog::writeSessionStart(std::string(n), std::string(v), std::string(hn), std::string(hl), std::string(hver), std::string(build), std::string(bundle), std::string(gpu))

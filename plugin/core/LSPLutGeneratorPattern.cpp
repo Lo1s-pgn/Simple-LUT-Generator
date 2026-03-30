@@ -11,15 +11,6 @@ int lspLutGenLutSizeFromChoiceIndex(int p_Index) {
     return kN[p_Index];
 }
 
-int lspLutGenMaxFeasibleN(int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
-    static const int kOrder[] = { 128, 64, 32, 16 };
-    for (int n : kOrder) {
-        if (lspLutGenFeasibleN(n, p_FrameW, p_FrameH, p_MinPixelsPerUnit))
-            return n;
-    }
-    return 16;
-}
-
 bool lspLutGenExportSizeValid(int p_NMax, int p_NExport) {
     if (p_NMax < 2 || p_NExport < 2)
         return false;
@@ -52,9 +43,8 @@ void chooseFactorsAB(int p_N, int p_FrameW, int p_FrameH, int* p_OutA, int* p_Ou
         }
     }
 }
-} // namespace
 
-void lspLutGenGridDimensions(int p_N, int p_FrameW, int p_FrameH, int* p_OutTx, int* p_OutTy) {
+void gridDimensions(int p_N, int p_FrameW, int p_FrameH, int* p_OutTx, int* p_OutTy) {
     if (!p_OutTx || !p_OutTy || p_N < 2) {
         if (p_OutTx)
             *p_OutTx = 0;
@@ -69,17 +59,27 @@ void lspLutGenGridDimensions(int p_N, int p_FrameW, int p_FrameH, int* p_OutTx, 
     *p_OutTy = p_N * b;
 }
 
-bool lspLutGenFeasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
+bool feasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
     if (p_N < 2 || p_FrameW < 1 || p_FrameH < 1)
         return false;
     int tx = 0;
     int ty = 0;
-    lspLutGenGridDimensions(p_N, p_FrameW, p_FrameH, &tx, &ty);
+    gridDimensions(p_N, p_FrameW, p_FrameH, &tx, &ty);
     if (tx < 1 || ty < 1)
         return false;
     const float pxW = static_cast<float>(p_FrameW) / static_cast<float>(tx);
     const float pxH = static_cast<float>(p_FrameH) / static_cast<float>(ty);
     return pxW >= p_MinPixelsPerUnit && pxH >= p_MinPixelsPerUnit;
+}
+} // namespace
+
+int lspLutGenMaxFeasibleN(int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
+    static const int kOrder[] = { 128, 64, 32, 16 };
+    for (int n : kOrder) {
+        if (feasibleN(n, p_FrameW, p_FrameH, p_MinPixelsPerUnit))
+            return n;
+    }
+    return 16;
 }
 
 void lspLutGenPatternRGBA(int p_Px, int p_Py, const OfxRectI& p_B, int n, float p_Out[4]) {

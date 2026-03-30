@@ -45,12 +45,6 @@ void LSPLutGeneratorProcessor::multiThreadProcessImages(OfxRectI p_Window) {
         }
         return;
     }
-    if (_operationMode == kOperationModeAnalyze) {
-        if (!_srcImg)
-            return;
-        copyRGBAWindow(_srcImg, _dstImg, p_Window);
-        return;
-    }
     if (!_srcImg)
         return;
     copyRGBAWindow(_srcImg, _dstImg, p_Window);

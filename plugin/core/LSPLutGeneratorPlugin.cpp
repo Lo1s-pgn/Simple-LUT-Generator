@@ -81,24 +81,23 @@ LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
     m_LutExportSize = fetchChoiceParam("lutExportSize");
     (void)fetchPushButtonParam("lutRefreshUi");
     m_ExportLut = fetchPushButtonParam("exportLut");
-    (void)fetchPushButtonParam("lutGenReportBug");
-    (void)fetchPushButtonParam("lutGenHelp");
-    (void)fetchPushButtonParam("lutGenOpenLog");
 
     OFX::StringParam* creditsLabel = fetchStringParam("lutGenCreditsLabel");
     if (creditsLabel)
         creditsLabel->setEnabled(false);
 
     {
-        std::string versionStr = PLUGIN_VERSION_STR;
+        const std::string versionStr = PLUGIN_VERSION_STR;
         OFX::ImageEffectHostDescription* host = OFX::getImageEffectHostDescription();
-        std::string hostName = host ? host->hostName : "unknown";
-        std::string hostLabel = host ? host->hostLabel : "";
+        const std::string hostName = host ? host->hostName : "unknown";
+        const std::string hostLabel = host ? host->hostLabel : "";
         std::string hostVersion;
-        if (host && (host->versionMajor != 0 || host->versionMinor != 0 || host->versionMicro != 0))
-            hostVersion = std::to_string(host->versionMajor) + "." + std::to_string(host->versionMinor) + "." + std::to_string(host->versionMicro);
-        if (host && !host->versionLabel.empty())
-            hostVersion = host->versionLabel;
+        if (host) {
+            if (!host->versionLabel.empty())
+                hostVersion = host->versionLabel;
+            else if (host->versionMajor != 0 || host->versionMinor != 0 || host->versionMicro != 0)
+                hostVersion = std::to_string(host->versionMajor) + "." + std::to_string(host->versionMinor) + "." + std::to_string(host->versionMicro);
+        }
         const std::string buildInfo = __DATE__;
         const std::string bundlePath = LSPLutGeneratorLog::getPluginBundleRootPath();
         LSP_LUTGEN_LOG_SESSION_START(kPluginName, versionStr, hostName, hostLabel, hostVersion, buildInfo, bundlePath, "");
@@ -218,22 +217,17 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     if (!lspLutGenBuildAnalyzedCube(src.get(), nMax, cubeMax))
         return;
 
-    if (nExport == nMax) {
-        const std::string path = LSPLutGenShowSaveLUTDialog(nullptr);
-        if (path.empty())
+    const float* cubePtr = cubeMax.data();
+    std::vector<float> cubeDown;
+    if (nExport != nMax) {
+        if (!lspLutGenDownsampleCubeRgba(cubeMax.data(), nMax, nExport, cubeDown))
             return;
-        if (!lspLutGenWriteCubeFile(path, nMax, cubeMax.data()))
-            LSP_LUTGEN_LOG_ERROR("write_cube_failed");
-        return;
+        cubePtr = cubeDown.data();
     }
-
-    std::vector<float> cubeOut;
-    if (!lspLutGenDownsampleCubeRgba(cubeMax.data(), nMax, nExport, cubeOut))
-        return;
     const std::string path = LSPLutGenShowSaveLUTDialog(nullptr);
     if (path.empty())
         return;
-    if (!lspLutGenWriteCubeFile(path, nExport, cubeOut.data()))
+    if (!lspLutGenWriteCubeFile(path, nExport, cubePtr))
         LSP_LUTGEN_LOG_ERROR("write_cube_failed");
 }
 
@@ -246,7 +240,7 @@ void LSPLutGeneratorPlugin::beginEdit() {
 
 void LSPLutGeneratorPlugin::changedClip(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ClipName) {
     OFX::ImageEffect::changedClip(p_Args, p_ClipName);
-    if (p_ClipName == std::string(kOfxImageEffectSimpleSourceClipName))
+    if (p_ClipName == kOfxImageEffectSimpleSourceClipName)
         syncLutSizeConstraintUi(p_Args.time);
 }
 
@@ -271,15 +265,12 @@ void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
     if (dst->getRenderScale().x != p_Args.renderScale.x || dst->getRenderScale().y != p_Args.renderScale.y ||
         src->getRenderScale().x != p_Args.renderScale.x || src->getRenderScale().y != p_Args.renderScale.y) {
         OFX::throwSuiteStatusException(kOfxStatErrValue);
-        return;
     }
     if (src->getPixelDepth() != dst->getPixelDepth() || src->getPixelComponents() != dst->getPixelComponents()) {
         OFX::throwSuiteStatusException(kOfxStatErrValue);
-        return;
     }
     if (dst->getPixelDepth() != OFX::eBitDepthFloat || dst->getPixelComponents() != OFX::ePixelComponentRGBA) {
         OFX::throwSuiteStatusException(kOfxStatErrFormat);
-        return;
     }
 
     int mode = 0;

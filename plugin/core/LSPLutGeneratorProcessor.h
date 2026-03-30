@@ -10,7 +10,6 @@ public:
     void setSrcImg(OFX::Image* p_Img) { _srcImg = p_Img; }
     void setOperationMode(int p_Mode) { _operationMode = p_Mode; }
     void setDstFullBounds(const OfxRectI& p_Bounds) { _dstFullBounds = p_Bounds; }
-    /** Generate LUT Table mode: always the **max feasible** n for the output bounds (set by plugin). */
     void setGenerateLutN(int p_N) { _generateLutN = p_N; }
 
     void multiThreadProcessImages(OfxRectI p_Window) override;

@@ -9,29 +9,6 @@ OFX::GroupParamDescriptor* addGroup(OFX::ImageEffectDescriptor& p_Desc, const ch
     g->setOpen(p_Open);
     return g;
 }
-static void describeLutGeneratorSupportParams(OFX::ImageEffectDescriptor& p_Desc, OFX::GroupParamDescriptor& p_Group) {
-    OFX::StringParamDescriptor* creditsParam = p_Desc.defineStringParam("lutGenCreditsLabel");
-    creditsParam->setLabels("Credits", "Credits", "Credits");
-    creditsParam->setDefault("Made by Loïs Plagnard");
-    creditsParam->setStringType(OFX::eStringTypeLabel);
-    creditsParam->setAnimates(false);
-    creditsParam->setParent(p_Group);
-
-    OFX::PushButtonParamDescriptor* reportBugBtn = p_Desc.definePushButtonParam("lutGenReportBug");
-    reportBugBtn->setLabels("Report Bug", "Report Bug", "Report Bug");
-    reportBugBtn->setHint("Report a bug.");
-    reportBugBtn->setParent(p_Group);
-
-    OFX::PushButtonParamDescriptor* helpBtn = p_Desc.definePushButtonParam("lutGenHelp");
-    helpBtn->setLabels("Help", "Help", "Help");
-    helpBtn->setHint("Help and documentation.");
-    helpBtn->setParent(p_Group);
-
-    OFX::PushButtonParamDescriptor* openLogBtn = p_Desc.definePushButtonParam("lutGenOpenLog");
-    openLogBtn->setLabels("Open Log", "Open Log", "Open Log");
-    openLogBtn->setHint("Open LutGenerator.log (~/Library/Application Support/LSP/).");
-    openLogBtn->setParent(p_Group);
-}
 } // namespace
 
 void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::ContextEnum /*p_Context*/) {
@@ -84,7 +61,26 @@ void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::Cont
     exportPb->setParent(*mainG);
 
     OFX::GroupParamDescriptor* supportG = addGroup(p_Desc, "lutGenSupportGroup", "SUPPORT", "Info and log.", false);
-    describeLutGeneratorSupportParams(p_Desc, *supportG);
+    {
+        OFX::StringParamDescriptor* creditsParam = p_Desc.defineStringParam("lutGenCreditsLabel");
+        creditsParam->setLabels("Credits", "Credits", "Credits");
+        creditsParam->setDefault("Made by Loïs Plagnard");
+        creditsParam->setStringType(OFX::eStringTypeLabel);
+        creditsParam->setAnimates(false);
+        creditsParam->setParent(*supportG);
+        OFX::PushButtonParamDescriptor* reportBugBtn = p_Desc.definePushButtonParam("lutGenReportBug");
+        reportBugBtn->setLabels("Report Bug", "Report Bug", "Report Bug");
+        reportBugBtn->setHint("Report a bug.");
+        reportBugBtn->setParent(*supportG);
+        OFX::PushButtonParamDescriptor* helpBtn = p_Desc.definePushButtonParam("lutGenHelp");
+        helpBtn->setLabels("Help", "Help", "Help");
+        helpBtn->setHint("Help and documentation.");
+        helpBtn->setParent(*supportG);
+        OFX::PushButtonParamDescriptor* openLogBtn = p_Desc.definePushButtonParam("lutGenOpenLog");
+        openLogBtn->setLabels("Open Log", "Open Log", "Open Log");
+        openLogBtn->setHint("Open LutGenerator.log (~/Library/Application Support/LSP/).");
+        openLogBtn->setParent(*supportG);
+    }
 
     page->addChild(*mainG);
     page->addChild(*supportG);
