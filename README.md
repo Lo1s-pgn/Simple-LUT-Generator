@@ -62,7 +62,7 @@ sudo make install SKIP_RESOLVE_OFX_CACHE_PURGE=1
 
 Prebuilt bundles may be blocked by Gatekeeper.
 
-### Method 1 — Terminal (common approach)
+### Method 1 — Terminal (recommended)
 
 Adjust the bundle name to match your installed version, then run:
 
