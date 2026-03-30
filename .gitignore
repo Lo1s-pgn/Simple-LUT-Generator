@@ -1,0 +1,42 @@
+# Build outputs
+build/
+plugin/version_gen.h
+*.o
+*.ofx
+*.bundle/
+
+# Local release outputs (bundles + zips)
+release/
+
+# Optional local copy of the release script (committed template is make_release.sh.example)
+tools/make_release.sh
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+venv/
+.venv/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Xcode / macOS
+xcode-build/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Windows
+*.vcxproj.user
+*.suo
+*.sdf
+
+# OS
+.DS_Store
+Thumbs.db

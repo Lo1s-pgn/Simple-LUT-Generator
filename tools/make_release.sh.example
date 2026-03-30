@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Build the OFX bundle and zip it for upload (e.g. GitHub Release asset).
+# Source archives are provided by GitHub on each release; no separate source zip here.
+# Copy to tools/make_release.sh (gitignored) if you prefer that name, or run this file directly.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+VERSION="$(head -n1 VERSION | tr -d ' \r\n')"
+if [[ -z "$VERSION" ]]; then
+  echo "ERROR: Empty VERSION"
+  exit 1
+fi
+
+STEM="LSP_LutGenerator_${VERSION}"
+REL="${ROOT}/release"
+mkdir -p "$REL"
+BINZIP="${REL}/${STEM}_macOS_universal.zip"
+
+echo "==> make clean && make"
+make clean
+make
+
+BUNDLE="${REL}/${STEM}.ofx.bundle"
+if [[ ! -d "$BUNDLE" ]]; then
+  echo "ERROR: Missing bundle: $BUNDLE"
+  exit 1
+fi
+
+rm -f "$BINZIP"
+echo "==> Zip plug-in: $(basename "$BINZIP")"
+( cd "$REL" && zip -r -q "$BINZIP" "${STEM}.ofx.bundle" )
+
+echo "Done: $BINZIP"
