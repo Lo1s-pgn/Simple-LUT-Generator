@@ -1,34 +1,8 @@
 #ifndef _ofxCore_h_
 #define _ofxCore_h_
 
-/*
-Software License :
-
-Copyright (c) 2003-2015, The Open Effects Association Ltd. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-    * Neither the name The Open Effects Association Ltd, nor the names of its
-      contributors may be used to endorse or promote products derived from this
-      software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright OpenFX and contributors to the OpenFX project.
+// SPDX-License-Identifier: BSD-3-Clause
 
 
 #include "stddef.h" // for size_t
@@ -48,10 +22,10 @@ Contains the core OFX architectural struct and function definitions. For more de
  * This macro is to be used before any symbol that is to be
  * exported from a plug-in. This is OS/compiler dependent.
  */
-#if defined(WIN32) || defined(WIN64)
-    #define OfxExport extern __declspec(dllexport)
+#if defined(_WIN32)
+	#define OfxExport extern __declspec(dllexport)
 #else
-    #define OfxExport extern
+	#define OfxExport extern
 #endif
 
 /** @brief Blind data structure to manipulate sets of properties through */
@@ -73,17 +47,20 @@ typedef struct OfxHost {
 
   /** @brief The function which the plug-in uses to fetch suites from the host.
 
-      \arg \e host          - the host the suite is being fetched from this \em must be the \e host member of the OfxHost struct containing fetchSuite.
-      \arg \e suiteName     - ASCII string labelling the host supplied API
-      \arg \e suiteVersion  - version of that suite to fetch
+      \arg \c host          the host the suite is being fetched from this \em must be the \e host member of the OfxHost struct containing fetchSuite.
+      \arg \c suiteName     ASCII string labelling the host supplied API
+      \arg \c suiteVersion  version of that suite to fetch
 
       Any API fetched will be valid while the binary containing the plug-in is loaded.
 
       Repeated calls to fetchSuite with the same parameters will return the same pointer.
 
+      It is recommended that hosts should return the same host and suite pointers to all plugins
+      in the same shared lib or bundle.
+
       returns
          - NULL if the API is unknown (either the api or the version requested),
-     - pointer to the relevant API if it was found
+	 - pointer to the relevant API if it was found
   */
   const void *(*fetchSuite)(OfxPropertySetHandle host, const char *suiteName, int suiteVersion);
 } OfxHost;
@@ -91,10 +68,10 @@ typedef struct OfxHost {
 
 /** @brief Entry point for plug-ins
 
-  \arg \e action   - ASCII c string indicating which action to take
-  \arg \e instance - object to which action should be applied, this will need to be cast to the appropriate blind data type depending on the \e action
-  \arg \e inData   - handle that contains action specific properties
-  \arg \e outData  - handle where the plug-in should set various action specific properties
+  \arg \c action   ASCII c string indicating which action to take
+  \arg \c instance object to which action should be applied, this will need to be cast to the appropriate blind data type depending on the \e action
+  \arg \c inData   handle that contains action specific properties
+  \arg \c outData  handle where the plug-in should set various action specific properties
 
   This is how the host generally communicates with a plug-in. Entry points are used to pass messages
   to various objects used within OFX. The main use is within the OfxPlugin struct.
@@ -118,7 +95,7 @@ typedef struct OfxPlugin {
   /** Defines the type of the plug-in, this will tell the host what the plug-in does. e.g.: an image
       effects plug-in would be a "OfxImageEffectPlugin"
    */
-  const char        *pluginApi;
+  const char		*pluginApi;
 
   /** Defines the version of the pluginApi that this plug-in implements */
   int            apiVersion;
@@ -130,10 +107,10 @@ typedef struct OfxPlugin {
       name and no non printing chars.
       For example "uk.co.somesoftwarehouse.myPlugin"
   */
-  const char        *pluginIdentifier;
+  const char 		*pluginIdentifier;
 
   /** Major version of this plug-in, this gets incremented when backwards compatibility is broken. */
-  unsigned int   pluginVersionMajor;
+  unsigned int 	 pluginVersionMajor;
 
   /**  Major version of this plug-in, this gets incremented when software is changed,
        but does not break backwards compatibility. */
@@ -141,7 +118,7 @@ typedef struct OfxPlugin {
 
   /** @brief Function the host uses to connect the plug-in to the host's api fetcher
 
-      \arg \e fetchApi - pointer to host's API fetcher
+      \arg \c fetchApi pointer to host's API fetcher
 
       Mandatory function.
 
@@ -152,6 +129,9 @@ typedef struct OfxPlugin {
 
       \post
         - the pointer suite is valid until the plug-in is unloaded
+
+      It is recommended that hosts should return the same host and suite pointers to all plugins
+      in the same shared lib or bundle.
   */
   void     (*setHost)(OfxHost *host);
 
@@ -185,6 +165,8 @@ These are the actions passed to a plug-in's 'main' function
  The \ref handle, \ref inArgs and \ref outArgs arguments to the \ref mainEntry
  are redundant and should be set to NULL.
 
+ 
+
  \pre
  - The plugin's \ref OfxPlugin::setHost function has been called
 
@@ -194,8 +176,10 @@ These are the actions passed to a plug-in's 'main' function
  @returns
  -  \ref kOfxStatOK, the action was trapped and all was well,
  -  \ref kOfxStatReplyDefault, the action was ignored,
- -  \ref kOfxStatFailed, the load action failed, no further actions will be
- passed to the plug-in,
+ -  \ref kOfxStatFailed, the load action failed, no further actions will be passed to the plug-in.
+ Interpret if possible  kOfxStatFailed as plug-in indicating it does not want to load 
+ Do not create an entry in the host's UI for plug-in then.  
+ Plug-in also has the option to return 0 for OfxGetNumberOfPlugins or kOfxStatFailed if host supports OfxSetHost in which case kOfxActionLoad will never be called.
  -  \ref kOfxStatErrFatal, fatal error in the plug-in.
  */
 #define  kOfxActionLoad "OfxActionLoad"
@@ -229,12 +213,13 @@ These are the actions passed to a plug-in's 'main' function
      returns one of the error codes where the host is allowed to attempt
      the action again
      -  the handle argument, being the global plug-in description handle, is
-     a valid handle from the end of a sucessful describe action until the
+     a valid handle from the end of a successful describe action until the
      end of the \ref kOfxActionUnload action (ie: the plug-in can cache it away
      without worrying about it changing between actions).
      -  \ref kOfxImageEffectActionDescribeInContext
      will be called once for each context that the host and plug-in
-     mutually support.
+     mutually support.  If a plug-in does not report to support any context supported by host, 
+	 host should not enable the plug-in.
 
  @returns
      -  \ref kOfxStatOK, the action was trapped and all was well
@@ -258,7 +243,7 @@ These are the actions passed to a plug-in's 'main' function
  The handle, inArgs and outArgs arguments to the main entry
  are redundant and should be set to NULL.
 
- \pref
+ \pre
      -  the \ref kOfxActionLoad action has been called
      -  all instances of a plugin have been destroyed
 
@@ -276,7 +261,7 @@ These are the actions passed to a plug-in's 'main' function
 /** @brief
 
  This action is an action that may be passed to a plug-in
- instance from time to time in low memory situations. Instances recieving
+ instance from time to time in low memory situations. Instances receiving
  this action should destroy any data structures they may have and release
  the associated memory, they can later reconstruct this from the effect's
  parameter set and associated information.
@@ -344,7 +329,7 @@ These are the actions passed to a plug-in's 'main' function
  @param  inArgs is redundant and is set to NULL
  @param  outArgs is redundant and is set to NULL
 
- \pref
+ \pre
      -  \ref kOfxActionDescribe has been called
      -  the instance is fully constructed, with all objects requested in the
      describe actions (eg, parameters and clips) have been constructed and
@@ -436,7 +421,7 @@ These are the actions passed to a plug-in's 'main' function
      value of the object because it varies over time
 
      -  \ref kOfxPropTime
-     - the effect time at which the chang occured (for Image Effect Plugins only)
+     - the effect time at which the chang occurred (for Image Effect Plugins only)
      -  \ref kOfxImageEffectPropRenderScale
      - the render scale currently being applied to any image fetched
      from a clip (for Image Effect Plugins only)
@@ -580,6 +565,17 @@ OfxExport OfxPlugin *OfxGetPlugin(int nth);
  */
 OfxExport int OfxGetNumberOfPlugins(void);
 
+/** @brief First thing host should call
+*
+* This host call, added in 2020, is not specified in earlier implementation of the API.
+* Therefore host must check if the plugin implemented it and not assume symbol exists.
+* The order of calls is then:  1) OfxSetHost, 2) OfxGetNumberOfPlugins, 3) OfxGetPlugin
+* The host pointer is only assumed valid until OfxGetPlugin where it might get reset.
+* Plug-in can return kOfxStatFailed to indicate it has nothing to do here, it's not for this Host and it should be skipped silently.
+*/
+
+OfxExport  OfxStatus OfxSetHost(const OfxHost *host);
+
 /**
    \defgroup PropertiesAll Ofx Properties
 
@@ -622,7 +618,7 @@ If this is not present, it is safe to assume that the version of the API is "1.0
 
 If false the effect currently has no interface, however this may be because the effect is loaded in a background render host, or it may be loaded on an interactive host that has not yet opened an editor for the effect.
 
-The output of an effect should only ever depend on the state of its parameters, not on the interactive flag. The interactive flag is more a courtesy flag to let a plugin know that it has an interace. If a plugin want's to have its behaviour dependant on the interactive flag, it can always make a secret parameter which shadows the state if the flag.
+The output of an effect should only ever depend on the state of its parameters, not on the interactive flag. The interactive flag is more a courtesy flag to let a plugin know that it has an interface. If a plugin wants to have its behaviour dependent on the interactive flag, it can always make a secret parameter which shadows the state if the flag.
 */
 #define kOfxPropIsInteractive "OfxPropIsInteractive"
 
@@ -669,7 +665,7 @@ This data pointer is unique to each plug-in instance, so two instances of the sa
     - Type - ASCII C string X 1
     - Property Set - on many objects (descriptors and instances), see \ref PropertiesByObject (read only)
 
-This property is used to label objects uniquely amoung objects of that type. It is typically set when a plugin creates a new object with a function that takes a name.
+This property is used to label objects uniquely among objects of that type. It is typically set when a plugin creates a new object with a function that takes a name.
 */
 #define kOfxPropName "OfxPropName"
 
@@ -740,7 +736,7 @@ The first dimension, if set, will the name of and SVG file, the second a PNG fil
     - Property Set - on many objects (descriptors and instances), see \ref PropertiesByObject. Typically readable and writable in most cases.
     - Default - initially ::kOfxPropName, but will be reset if ::kOfxPropLabel is changed.
 
-This is a shorter version of the label, typically 13 character glyphs or less. Hosts should use this if they have limitted display space for their object labels.
+This is a shorter version of the label, typically 13 character glyphs or less. Hosts should use this if they have limited display space for their object labels.
 */
 #define kOfxPropShortLabel "OfxPropShortLabel"
 
@@ -901,7 +897,7 @@ General status codes start at 1 and continue until 999
 /** @brief Status code indicating all was fine */
 #define kOfxStatOK 0
 
-/** @brief Status error code for a failed operation */
+/** @brief Status error code for a failed operation. */
 #define kOfxStatFailed  ((int)1)
 
 /** @brief Status error code for a fatal error
@@ -959,9 +955,9 @@ General status codes start at 1 and continue until 999
 
 /** @mainpage OFX : Open Plug-Ins For Special Effects
 
-This page represents the automatically extracted HTML documentation of the source headers for the OFX Image Effect API. The documentation was extracted by doxygen (http://www.doxygen.org). It breaks documentation into sets of pages, use the links at the top of this page (marked 'Modules', 'Compound List' and especially 'File List' etcc) to browse through the OFX doc.
-
-A more complete reference manual is http://openfx.sourceforge.net .
+This page represents the automatically extracted HTML documentation of the source headers for the OFX Image Effect API.
+The documentation was extracted by doxygen (http://www.doxygen.org).
+A more complete reference manual is https://openfx.readthedocs.io .
 
 */
 

@@ -1,45 +1,11 @@
-/*
-OFX Support Library, a library that skins the OFX plug-in API with C++ classes.
-Copyright (C) 2004-2005 The Open Effects Association Ltd
-Author Bruno Nicoletti bruno@thefoundry.co.uk
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-* Neither the name The Open Effects Association Ltd, nor the names of its
-contributors may be used to endorse or promote products derived from this
-software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The Open Effects Association Ltd
-1 Wardour St
-London W1D 6PA
-England
-
-
-*/
+// Copyright OpenFX and contributors to the OpenFX project.
+// SPDX-License-Identifier: BSD-3-Clause
 
 /** @brief This file contains code that skins the ofx interact suite (for image effects) */
 
 
 #include "ofxsSupportPrivate.h"
 #include <algorithm> // for find
-#include "ofxDrawSuite.h"
 
 /** @brief The core 'OFX Support' namespace, used by plugin implementations. All code for these are defined in the common support libraries.
 */
@@ -85,7 +51,7 @@ namespace OFX {
     // get the effect handle from this handle
     OfxImageEffectHandle effectHandle = (OfxImageEffectHandle) interactProperties.propGetPointer(kOfxPropEffectInstance);
 
-    // get the effect properties
+    // get the effect properties 
     return OFX::Private::retrieveImageEffectPointer(effectHandle);
   }
 
@@ -100,10 +66,10 @@ namespace OFX {
     throwSuiteStatusException(stat);
     _interactProperties.propSetHandle(propHandle);
 
-    // set othe instance data on the property handle to point to this interact
+    // set other instance data on the property handle to point to this interact
     _interactProperties.propSetPointer(kOfxPropInstanceData, (void *)this);
 
-    // get the effect handle from this handle
+    // get the effect handle from this handle        
     _effect = retrieveEffectFromInteractHandle(handle);
   }
 
@@ -113,7 +79,7 @@ namespace OFX {
   }
 
   /** @brief The bitdepth of each component in the openGL frame buffer */
-  int
+  int 
     Interact::getBitDepth(void) const
   {
     return _interactProperties.propGetInt(kOfxInteractPropBitDepth);
@@ -126,8 +92,8 @@ namespace OFX {
     return _interactProperties.propGetInt(kOfxInteractPropHasAlpha) != 0;
   }
 
-  /** @brief Returns the size of a real screen pixel under the interact's cannonical projection */
-  OfxPointD
+  /** @brief Returns the size of a real screen pixel under the interact's canonical projection */
+  OfxPointD 
     Interact::getPixelScale(void) const
   {
     OfxPointD v;
@@ -157,15 +123,15 @@ namespace OFX {
   }
 
   /** @brief Request a redraw */
-  void
+  void 
     Interact::requestRedraw(void) const
   {
     OfxStatus stat = OFX::Private::gInteractSuite->interactRedraw(_interactHandle);
     throwSuiteStatusException(stat);
   }
 
-  /** @brief Swap a buffer in the case of a double bufferred interact, this is possibly a silly one */
-  void
+  /** @brief Swap a buffer in the case of a double buffered interact, this is possibly a silly one */
+  void 
     Interact::swapBuffers(void) const
   {
     OfxStatus stat = OFX::Private::gInteractSuite->interactSwapBuffers(_interactHandle);
@@ -173,7 +139,7 @@ namespace OFX {
   }
 
   /** @brief Set a param that the interact should be redrawn on if its value changes */
-  void
+  void 
     Interact::addParamToSlaveTo(Param *p)
   {
     // do we have it already ?
@@ -191,7 +157,7 @@ namespace OFX {
   }
 
   /** @brief Remova a param that the interact should be redrawn on if its value changes */
-  void
+  void 
     Interact::removeParamToSlaveTo(Param *p)
   {
     // do we have it already ?
@@ -219,7 +185,7 @@ namespace OFX {
   }
 
   /** @brief the function called to draw in the interact */
-  bool
+  bool 
     Interact::draw(const DrawArgs &/*args*/)
   {
     return false;
@@ -227,78 +193,78 @@ namespace OFX {
 
   /** @brief the function called to handle pen motion in the interact
 
-  returns true if the interact trapped the action in some sense. This will block the action being passed to
+  returns true if the interact trapped the action in some sense. This will block the action being passed to 
   any other interact that may share the viewer.
   */
-  bool
+  bool 
     Interact::penMotion(const PenArgs &/*args*/)
   {
     return false;
   }
 
-  /** @brief the function called to handle pen down events in the interact
+  /** @brief the function called to handle pen down events in the interact 
 
-  returns true if the interact trapped the action in some sense. This will block the action being passed to
+  returns true if the interact trapped the action in some sense. This will block the action being passed to 
   any other interact that may share the viewer.
   */
-  bool
+  bool 
     Interact::penDown(const PenArgs &/*args*/)
   {
     return false;
   }
 
-  /** @brief the function called to handle pen up events in the interact
+  /** @brief the function called to handle pen up events in the interact 
 
-  returns true if the interact trapped the action in some sense. This will block the action being passed to
+  returns true if the interact trapped the action in some sense. This will block the action being passed to 
   any other interact that may share the viewer.
   */
-  bool
+  bool 
     Interact::penUp(const PenArgs &/*args*/)
   {
     return false;
   }
 
-  /** @brief the function called to handle key down events in the interact
+  /** @brief the function called to handle key down events in the interact 
 
-  returns true if the interact trapped the action in some sense. This will block the action being passed to
+  returns true if the interact trapped the action in some sense. This will block the action being passed to 
   any other interact that may share the viewer.
   */
-  bool
+  bool 
     Interact::keyDown(const KeyArgs &/*args*/)
   {
     return false;
   }
 
-  /** @brief the function called to handle key up events in the interact
+  /** @brief the function called to handle key up events in the interact 
 
-  returns true if the interact trapped the action in some sense. This will block the action being passed to
+  returns true if the interact trapped the action in some sense. This will block the action being passed to 
   any other interact that may share the viewer.
   */
-  bool
+  bool 
     Interact::keyUp(const KeyArgs &/*args*/)
   {
     return false;
   }
 
-  /** @brief the function called to handle key down repeat events in the interact
+  /** @brief the function called to handle key down repeat events in the interact 
 
-  returns true if the interact trapped the action in some sense. This will block the action being passed to
+  returns true if the interact trapped the action in some sense. This will block the action being passed to 
   any other interact that may share the viewer.
   */
-  bool
+  bool 
     Interact::keyRepeat(const KeyArgs &/*args*/)
   {
     return false;
   }
 
   /** @brief Called when the interact is given input focus */
-  void
+  void 
     Interact::gainFocus(const FocusArgs &/*args*/)
   {
   }
 
   /** @brief Called when the interact is loses input focus */
-  void
+  void 
     Interact::loseFocus(const FocusArgs &/*args*/)
   {
   }
@@ -341,7 +307,6 @@ namespace OFX {
 #endif
     backGroundColour = getBackgroundColour(props);
     pixelScale       = getPixelScale(props);
-    context          = (OfxDrawContextHandle)props.propGetPointer(kOfxInteractPropDrawContext, false);
   }
 
   /** @brief ctor */
@@ -359,7 +324,7 @@ namespace OFX {
     try {
       penViewportPosition.x = props.propGetInt(kOfxInteractPropPenViewportPosition, 0);
       penViewportPosition.y = props.propGetInt(kOfxInteractPropPenViewportPosition, 1);
-    } catch (OFX::Exception::PropertyUnknownToHost) {
+    } catch (OFX::Exception::PropertyUnknownToHost&) {
       // Introduced in OFX 1.2. Return (-1,-1) if not available
       penViewportPosition.x = penViewportPosition.y = -1.;
     }
@@ -553,7 +518,7 @@ namespace OFX {
           desc.setPropertySet(&interactProperties);
           desc.describe();
         }
-        else if (action == kOfxActionCreateInstance)
+        else if (action == kOfxActionCreateInstance) 
         {
           // fetch the image effect we are being made for out of the interact's property handle
           ImageEffect *effect = retrieveEffectFromInteractHandle(handle);

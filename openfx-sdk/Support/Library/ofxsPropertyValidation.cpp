@@ -1,40 +1,7 @@
-/*
-OFX Support Library, a library that skins the OFX plug-in API with C++ classes.
-Copyright (C) 2004-2005 The Open Effects Association Ltd
-Author Bruno Nicoletti bruno@thefoundry.co.uk
+// Copyright OpenFX and contributors to the OpenFX project.
+// SPDX-License-Identifier: BSD-3-Clause
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-* Neither the name The Open Effects Association Ltd, nor the names of its
-contributors may be used to endorse or promote products derived from this
-software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The Open Effects Association Ltd
-1 Wardour St
-London W1D 6PA
-England
-
-
-*/
-
-/** @file
+/** @file 
 
 This file contains headers for classes that are used to validate property sets and make sure they have the right members and default values.
 
@@ -43,7 +10,7 @@ This file contains headers for classes that are used to validate property sets a
 #include "ofxsSupportPrivate.h"
 #include <stdarg.h>
 #ifdef OFX_SUPPORTS_OPENGLRENDER
-#include "ofxOpenGLRender.h"
+#include "ofxGPURender.h"
 #endif
 
 /** @brief Null pointer definition */
@@ -52,7 +19,7 @@ This file contains headers for classes that are used to validate property sets a
 // #define  kOfxsDisableValidation
 
 // disable validation if not a debug build
-#ifndef DEBUG_BUILD
+#ifndef DEBUG
 #define  kOfxsDisableValidation
 #endif
 
@@ -77,7 +44,7 @@ namespace OFX {
       double vD;
       void  *vP;
       for(int i = 0; i < dimension; i++) {
-        switch (ilk)
+        switch (ilk) 
         {
         case eString :
           vS = va_arg(argp, char *);
@@ -109,7 +76,7 @@ namespace OFX {
       , _exists(false) // only set when we have validated it
       , _dimension(dimension)
       , _ilk(ilk)
-    {
+    {      
       // go through the var args to extract defaults to check against and values to set to
       va_list argp;
       va_start(argp, dimension);
@@ -119,7 +86,7 @@ namespace OFX {
         // what is being set ?
         DescriptionTag tag = DescriptionTag(va_arg(argp, int));
 
-        switch (tag)
+        switch (tag) 
         {
         case eDescDefault : // we are setting default values to check against
           setVectorFromVarArgs(ilk, dimension, argp, _defaultValue);
@@ -137,21 +104,21 @@ namespace OFX {
 
 
     /** @brief See if the property exists in the containing property set and has the correct dimension */
-    void
+    void 
       PropertyDescription::validate(bool checkDefaults,
       PropertySet &propSet)
     {
-      // see if it exists by fetching the dimension,
+      // see if it exists by fetching the dimension, 
 
       try {
         int hostDimension = propSet.propGetDimension(_name.c_str());
-        _exists = true;
+        _exists = true;  
 
         if(_dimension != -1) // -1 implies variable dimension
-          OFX::Log::error(hostDimension != _dimension, "Host reports property '%s' has dimension %d, it should be %d;", _name.c_str(), hostDimension, _dimension);
+          OFX::Log::error(hostDimension != _dimension, "Host reports property '%s' has dimension %d, it should be %d;", _name.c_str(), hostDimension, _dimension); 
         // check type by getting the first element, the property getting will print any failure messages to the log
         if(hostDimension > 0) {
-          switch(_ilk)
+          switch(_ilk) 
           {
           case OFX::ePointer : { void *vP = propSet.propGetPointer(_name.c_str()); (void)vP; }break;
           case OFX::eInt :     { int vI = propSet.propGetInt(_name.c_str()); (void)vI; } break;
@@ -163,13 +130,13 @@ namespace OFX {
         // check the defaults are OK, if there are any
         int nDefs = (int)_defaultValue.size();
         if(checkDefaults && nDefs > 0) {
-          OFX::Log::error(hostDimension != nDefs, "Host reports default dimension of '%s' as %d, which is different to the default dimension size of %d;",
+          OFX::Log::error(hostDimension != nDefs, "Host reports default dimension of '%s' as %d, which is different to the default dimension size of %d;", 
             _name.c_str(), hostDimension, nDefs);
 
           int N = hostDimension < nDefs ? hostDimension : nDefs;
 
           for(int i = 0; i < N; i++) {
-            switch(_ilk)
+            switch(_ilk) 
             {
             case OFX::ePointer : {
               void *vP = propSet.propGetPointer(_name.c_str(), i);
@@ -217,10 +184,10 @@ namespace OFX {
     }
 
 
-    /** @brief This macro is used to short hand passing the var args to @ref OFX::Validation::PropertySetDescription::PropertySetDescription */
+    /** @brief This macro is used to short hand passing the var args to @ref OFX::Validation::PropertySetDescription::PropertySetDescription */    
 #define mPropDescriptionArg(descs) descs, sizeof(descs)/sizeof(PropertyDescription)
 
-    /** @brief A set of property descriptions, constructor
+    /** @brief A set of property descriptions, constructor 
 
     Passed in as a zero terminated pairs of (PropertyDescription *descArray, int nDescriptions)
 
@@ -234,7 +201,7 @@ namespace OFX {
       va_start(argp, setName);
 
       while(1) {
-        // get a pointer
+        // get a pointer 
         PropertyDescription *descs = (PropertyDescription *) va_arg(argp, PropertyDescription *);
 
         // have we finished
@@ -274,7 +241,7 @@ namespace OFX {
 
     /** @brief Validate all the properties in the set */
     void
-      PropertySetDescription::validate(PropertySet &propSet,
+      PropertySetDescription::validate(PropertySet &propSet, 
       bool checkDefaults,
       bool logOrdinaryMessages)
     {
@@ -286,7 +253,7 @@ namespace OFX {
 
       // check each property in the description
       int n = (int)_descriptions.size();
-      for(int i = 0; i < n; i++)
+      for(int i = 0; i < n; i++) 
         _descriptions[i]->validate(checkDefaults, propSet);
 
       if(!logOrdinaryMessages) PropertySet::propEnableLogging();
@@ -327,12 +294,12 @@ namespace OFX {
       PropertyDescription(kOfxImageEffectPropSupportedComponents,        OFX::eString, -1, eDescFinished),
       PropertyDescription(kOfxImageEffectPropSupportedContexts,          OFX::eString, -1, eDescFinished),
 
-      // multi dimensional int properities
+      // multi dimensional int properties
       PropertyDescription(kOfxParamHostPropPageRowColumnCount,           OFX::eInt, 2, eDescFinished),
     };
 
     /** @brief the property set for the global host pointer */
-    static PropertySetDescription gHostPropSet("Host Property",
+    static PropertySetDescription gHostPropSet("Host Property", 
       gHostProps, sizeof(gHostProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -363,7 +330,6 @@ namespace OFX {
 
       // Pointer props with defaults that can be checked against
       PropertyDescription(kOfxImageEffectPluginPropOverlayInteractV1,      OFX::ePointer, 1, eDescDefault, (void *)(0), eDescFinished),
-      PropertyDescription(kOfxImageEffectPluginPropOverlayInteractV2,      OFX::ePointer, 1, eDescDefault, (void *)(0), eDescFinished),
 
       // string props that have variable dimension, and can't be checked against for defaults
       PropertyDescription(kOfxImageEffectPropSupportedContexts,  OFX::eString, -1, eDescFinished),
@@ -372,7 +338,7 @@ namespace OFX {
     };
 
     /** @brief the property set for the global plugin descriptor */
-    static PropertySetDescription gPluginDescriptorPropSet("Plugin Descriptor",
+    static PropertySetDescription gPluginDescriptorPropSet("Plugin Descriptor", 
       gPluginDescriptorProps, sizeof(gPluginDescriptorProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -405,7 +371,7 @@ namespace OFX {
     };
 
     /** @brief the property set for a plugin instance */
-    static PropertySetDescription gPluginInstancePropSet("Plugin Instance",
+    static PropertySetDescription gPluginInstancePropSet("Plugin Instance", 
       gPluginInstanceProps, sizeof(gPluginInstanceProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -431,7 +397,7 @@ namespace OFX {
     };
 
     /** @brief the property set for a clip descriptor */
-    static PropertySetDescription gClipDescriptorPropSet("Clip Descriptor",
+    static PropertySetDescription gClipDescriptorPropSet("Clip Descriptor", 
       gClipDescriptorProps, sizeof(gClipDescriptorProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -535,7 +501,7 @@ namespace OFX {
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
-    // Action in/out args properties
+    // Action in/out args properties 
     ////////////////////////////////////////////////////////////////////////////////
 
     /** @brief kOfxImageEffectActionDescribeInContext actions's inargs properties */
@@ -545,7 +511,7 @@ namespace OFX {
     };
 
     /** @brief the property set for describe in context action  */
-    static PropertySetDescription gDescribeInContextActionInArgPropSet(kOfxImageEffectActionDescribeInContext " in argument",
+    static PropertySetDescription gDescribeInContextActionInArgPropSet(kOfxImageEffectActionDescribeInContext " in argument", 
       gDescribeInContextActionInArgProps, sizeof(gDescribeInContextActionInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -564,7 +530,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionRender property set */
-    static PropertySetDescription gRenderActionInArgPropSet(kOfxImageEffectActionRender " in argument",
+    static PropertySetDescription gRenderActionInArgPropSet(kOfxImageEffectActionRender " in argument", 
       gRenderActionInArgProps, sizeof(gRenderActionInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -581,7 +547,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionBeginSequenceRender property set */
-    static PropertySetDescription gBeginSequenceRenderActionInArgPropSet(kOfxImageEffectActionBeginSequenceRender " in argument",
+    static PropertySetDescription gBeginSequenceRenderActionInArgPropSet(kOfxImageEffectActionBeginSequenceRender " in argument", 
       gBeginSequenceRenderActionInArgProps, sizeof(gBeginSequenceRenderActionInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -598,7 +564,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionEndSequenceRender property set */
-    static PropertySetDescription gEndSequenceRenderActionInArgPropSet(kOfxImageEffectActionEndSequenceRender " in argument",
+    static PropertySetDescription gEndSequenceRenderActionInArgPropSet(kOfxImageEffectActionEndSequenceRender " in argument", 
       gEndSequenceRenderActionInArgProps, sizeof(gEndSequenceRenderActionInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -612,7 +578,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionIsIdentity property set */
-    static PropertySetDescription gIsIdentityActionInArgPropSet(kOfxImageEffectActionIsIdentity " in argument",
+    static PropertySetDescription gIsIdentityActionInArgPropSet(kOfxImageEffectActionIsIdentity " in argument", 
       gIsIdentityActionInArgProps, sizeof(gIsIdentityActionInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -624,7 +590,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionIsIdentity property set */
-    static PropertySetDescription gIsIdentityActionOutArgPropSet(kOfxImageEffectActionIsIdentity " out argument",
+    static PropertySetDescription gIsIdentityActionOutArgPropSet(kOfxImageEffectActionIsIdentity " out argument", 
       gIsIdentityActionOutArgProps, sizeof(gIsIdentityActionOutArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -636,7 +602,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionGetRegionOfDefinition property set */
-    static PropertySetDescription gGetRegionOfDefinitionInArgPropSet(kOfxImageEffectActionGetRegionOfDefinition " in argument",
+    static PropertySetDescription gGetRegionOfDefinitionInArgPropSet(kOfxImageEffectActionGetRegionOfDefinition " in argument", 
       gGetRegionOfDefinitionInArgProps, sizeof(gGetRegionOfDefinitionInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -671,7 +637,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionGetTimeDomain property set */
-    static PropertySetDescription gGetTimeDomainOutArgPropSet(kOfxImageEffectActionGetTimeDomain " out argument",
+    static PropertySetDescription gGetTimeDomainOutArgPropSet(kOfxImageEffectActionGetTimeDomain " out argument", 
       gGetTimeDomainOutArgProps, sizeof(gGetTimeDomainOutArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -682,7 +648,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionGetFramesNeeded  property set */
-    static PropertySetDescription gGetFramesNeededInArgPropSet(kOfxImageEffectActionGetFramesNeeded " in argument",
+    static PropertySetDescription gGetFramesNeededInArgPropSet(kOfxImageEffectActionGetFramesNeeded " in argument", 
       gGetFramesNeededInArgProps, sizeof(gGetFramesNeededInArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -697,7 +663,7 @@ namespace OFX {
     };
 
     /** @brief kOfxImageEffectActionGetClipPreferences property set */
-    static PropertySetDescription gGetClipPreferencesOutArgPropSet(kOfxImageEffectActionGetClipPreferences " out argument",
+    static PropertySetDescription gGetClipPreferencesOutArgPropSet(kOfxImageEffectActionGetClipPreferences " out argument", 
       gGetClipPreferencesOutArgProps, sizeof(gGetClipPreferencesOutArgProps)/sizeof(PropertyDescription),
       NULLPTR);
 
@@ -733,7 +699,7 @@ namespace OFX {
 
 
     ////////////////////////////////////////////////////////////////////////////////
-    // parameter properties
+    // parameter properties 
     ////////////////////////////////////////////////////////////////////////////////
 
     /** @brief Basic parameter descriptor properties */
@@ -1221,13 +1187,13 @@ namespace OFX {
       }
       else if(action == kOfxImageEffectActionDescribeInContext) {
         gDescribeInContextActionInArgPropSet.validate(inArgs);
-      }
-#endif
+      }     
+#endif 
     }
 
     /** @brief Validates parameter properties */
     void
-      validateParameterProperties(ParamTypeEnum paramType,
+      validateParameterProperties(ParamTypeEnum paramType, 
       OFX::PropertySet paramProps,
       bool checkDefaults)
     {
@@ -1237,12 +1203,12 @@ namespace OFX {
     (void)checkDefaults;
 #else
       // should use a map here
-      switch(paramType)
+      switch(paramType) 
       {
       case eStringParam :
         gStringParamPropSet.validate(paramProps, checkDefaults);
         break;
-      case eIntParam :
+      case eIntParam :	
         gInt1DParamPropSet.validate(paramProps,  checkDefaults);
         break;
       case eInt2DParam :
@@ -1324,7 +1290,7 @@ namespace OFX {
           eDescFinished);
         gStringParamPropSet.addProperty(desc, true);
 
-        // do choice params animate
+        // do choice params animate      
         desc = new PropertyDescription(kOfxParamPropAnimates, OFX::eInt, 1,
           eDescDefault, int(getImageEffectHostDescription()->supportsChoiceAnimation),
           eDescFinished);

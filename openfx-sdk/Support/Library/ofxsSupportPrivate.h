@@ -1,39 +1,5 @@
-/*
-OFX Support Library, a library that skins the OFX plug-in API with C++ classes.
-Copyright (C) 2004-2005 The Open Effects Association Ltd
-Author Bruno Nicoletti bruno@thefoundry.co.uk
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-* Neither the name The Open Effects Association Ltd, nor the names of its
-contributors may be used to endorse or promote products derived from this
-software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The Open Effects Association Ltd
-1 Wardour St
-London W1D 6PA
-England
-
-
-
-*/
+// Copyright OpenFX and contributors to the OpenFX project.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #ifndef _ofxsSupportPrivate_H_
 #define _ofxsSupportPrivate_H_
@@ -59,9 +25,6 @@ namespace OFX {
 
     /** @brief Pointer to the  interact suite */
     extern OfxInteractSuiteV1    *gInteractSuite;
-
-    /** @brief Pointer to the overlay draw suite */
-    extern OfxDrawSuiteV1        *gDrawSuite;
 
     /** @brief Pointer to the parameter suite */
     extern OfxParameterSuiteV1   *gParamSuite;
@@ -96,7 +59,7 @@ namespace OFX {
     /** @brief Support lib function called on an ofx unload action */
     void unloadAction(void);
 
-    /** @brief The plugin function that gets passed the host structure.
+    /** @brief The plugin function that gets passed the host structure. 
     */
     void setHost(OfxHost *host);
 
@@ -169,7 +132,7 @@ namespace OFX {
       OFX::PropertyTypeEnum _ilk;
 
       /** @brief The default value that this property should have. Empty implies no default (eg: a host name has no default). */
-      std::vector<ValueHolder> _defaultValue;
+      std::vector<ValueHolder> _defaultValue; 
 
     public :
       /** @brief var args constructor that is use to describe properties */
@@ -195,7 +158,7 @@ namespace OFX {
       std::vector<PropertyDescription *> _deleteThese;
 
     public :
-      /** @brief constructor.
+      /** @brief constructor. 
 
       The varargs zero terminated are made from pairs of PropertyDescription * and ints indicating the number of properties pointed to.
       These are to come from static arrays and need not be deleted
@@ -209,7 +172,7 @@ namespace OFX {
       void addProperty(PropertyDescription *desc, bool deleteOnDestruction = true);
 
       /** @brief See if all properties exist and have the correct dimensions */
-      void validate(PropertySet &propSet, bool checkDefaults = true, bool logOrdinaryMessages = false);
+      void validate(PropertySet &propSet, bool checkDefaults = true, bool logOrdinaryMessages = false); 
     };
 
 
@@ -253,7 +216,7 @@ namespace OFX {
 
     /** @brief Validates parameter properties */
     void
-      validateParameterProperties(ParamTypeEnum paramType,
+      validateParameterProperties(ParamTypeEnum paramType, 
       OFX::PropertySet paramProps,
       bool checkDefaults);
 

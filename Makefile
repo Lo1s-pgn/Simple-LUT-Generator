@@ -20,7 +20,7 @@ RESOURCES_DIR = $(OFX_BUNDLE)/Contents/Resources
 # Vendored minimal SDK in-repo; override with OFX_SDK_PATH=/path/to/sdk if needed.
 OFX_SDK_PATH ?= openfx-sdk
 ARCH_FLAGS = -arch arm64 -arch x86_64
-CXXFLAGS = -std=c++20 -O2 -Wno-dynamic-exception-spec -fvisibility=hidden -Iplugin -Iplugin/core -Iplugin/presets -I"$(OFX_SDK_PATH)/OpenFX-1.4/include" -I"$(OFX_SDK_PATH)/Support/include" $(ARCH_FLAGS)
+CXXFLAGS = -std=c++20 -O2 -Wno-dynamic-exception-spec -fvisibility=hidden -Iplugin -Iplugin/core -Iplugin/presets -I"$(OFX_SDK_PATH)/include" -I"$(OFX_SDK_PATH)/Support/include" -I"$(OFX_SDK_PATH)/Support/Library" $(ARCH_FLAGS)
 LDFLAGS = -bundle -fvisibility=hidden -framework Foundation -framework AppKit -Wl,-rpath,@loader_path $(ARCH_FLAGS)
 
 PLUGIN_ICON_NAME := com.LSP.LutGenerator.$(PLUGIN_DISPLAY).png

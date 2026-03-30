@@ -1,34 +1,8 @@
 #ifndef _ofxParam_h_
 #define _ofxParam_h_
 
-/*
-Software License :
-
-Copyright (c) 2003-2015, The Open Effects Association Ltd. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-    * Neither the name The Open Effects Association Ltd, nor the names of its
-      contributors may be used to endorse or promote products derived from this
-      software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright OpenFX and contributors to the OpenFX project.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include "ofxCore.h"
 #include "ofxProperty.h"
@@ -46,8 +20,8 @@ extern "C" {
 /** @brief string value on the ::kOfxPropType property for all parameter instances */
 #define kOfxTypeParameterInstance "OfxTypeParameterInstance"
 
-/** @brief Blind declaration of an OFX param
-
+/** @brief Blind declaration of an OFX param 
+    
 */
 typedef struct OfxParamStruct *OfxParamHandle;
 
@@ -58,7 +32,7 @@ typedef struct OfxParamSetStruct *OfxParamSetHandle;
 
 
 /**
-   \defgroup ParamTypeDefines Parameter Type definitions
+   \defgroup ParamTypeDefines Parameter Type definitions 
 
 These strings are used to identify the type of the parameter when it is defined, they are also on the ::kOfxParamPropType in any parameter instance.
 */
@@ -72,6 +46,8 @@ These strings are used to identify the type of the parameter when it is defined,
 #define kOfxParamTypeBoolean "OfxParamTypeBoolean"
 /** @brief String to identify a param as a Single valued, 'one-of-many' parameter */
 #define kOfxParamTypeChoice "OfxParamTypeChoice"
+/** @brief String to identify a param as a string-valued 'one-of-many' parameter. \since Version 1.5 */
+#define kOfxParamTypeStrChoice "OfxParamTypeStrChoice"
 /** @brief String to identify a param as a Red, Green, Blue and Alpha colour parameter */
 #define kOfxParamTypeRGBA "OfxParamTypeRGBA"
 /** @brief String to identify a param as a Red, Green and Blue colour parameter */
@@ -88,6 +64,8 @@ These strings are used to identify the type of the parameter when it is defined,
 #define kOfxParamTypeString "OfxParamTypeString"
 /** @brief String to identify a param as a Plug-in defined parameter */
 #define kOfxParamTypeCustom "OfxParamTypeCustom"
+/** @brief String to identify a param as a Plug-in defined opaque data parameter */
+#define kOfxParamTypeBytes "OfxParamTypeBytes"
 /** @brief String to identify a param as a Grouping parameter */
 #define kOfxParamTypeGroup "OfxParamTypeGroup"
 /** @brief String to identify a param as a page parameter */
@@ -96,18 +74,28 @@ These strings are used to identify the type of the parameter when it is defined,
 #define kOfxParamTypePushButton "OfxParamTypePushButton"
 /*@}*/
 
+/** @brief Provides information for a parameter of type kOfxParamTypeBytes
+ */
+typedef struct OfxBytes
+{
+    /** @brief a pointer to the data buffer */
+    const unsigned char *data;
+    /** @brief the length of the data buffer, in bytes */
+    size_t length;
+} OfxBytes;
+
 /**
    \addtogroup PropertiesAll
 */
 /*@{*/
 /**
-   \defgroup ParamPropDefines Parameter Property Definitions
+   \defgroup ParamPropDefines Parameter Property Definitions 
 
 These are the list of properties used by the parameters suite.
 */
 /*@{*/
 
-/** @brief Indicates if the host supports animation of custom parameters
+/** @brief Indicates if the host supports animation of custom parameters 
 
     - Type - int X 1
     - Property Set - host descriptor (read only)
@@ -115,9 +103,9 @@ These are the list of properties used by the parameters suite.
 */
 #define kOfxParamHostPropSupportsCustomAnimation "OfxParamHostPropSupportsCustomAnimation"
 
-/** @brief Indicates if the host supports animation of string params
+/** @brief Indicates if the host supports animation of string params 
 
-    - Type - int X 1
+    - Type - int X 1 
     - Property Set - host descriptor (read only)
     - Valid Values - 0 or 1
 */
@@ -131,7 +119,7 @@ These are the list of properties used by the parameters suite.
 */
 #define kOfxParamHostPropSupportsBooleanAnimation "OfxParamHostPropSupportsBooleanAnimation"
 
-/** @brief Indicates if the host supports animation of choice params
+/** @brief Indicates if the host supports animation of choice params 
 
     - Type - int X 1
     - Property Set - host descriptor (read only)
@@ -144,6 +132,9 @@ These are the list of properties used by the parameters suite.
     - Type - int X 1
     - Property Set - host descriptor (read only)
     - Valid Values - 0 or 1
+
+Currently custom interacts for parameters can only be drawn using OpenGL.
+APIs will be added later to support using the new Draw Suite.
 */
 #define kOfxParamHostPropSupportsCustomInteract "OfxParamHostPropSupportsCustomInteract"
 
@@ -162,12 +153,12 @@ If set to -1 it implies unlimited number of parameters.
     - Property Set - host descriptor (read only)
 
     If there is no limit to the number of pages on a host, set this to -1.
-
+    
 Hosts that do not support paged parameter layout should set this to zero.
 */
 #define kOfxParamHostPropMaxPages "OfxParamHostPropMaxPages"
 
-/** @brief This indicates the number of parameter rows and coloumns on a page.
+/** @brief This indicates the number of parameter rows and columns on a page.
 
     - Type - int X 2
     - Property Set - host descriptor (read only)
@@ -200,11 +191,14 @@ See \ref ParametersInterfacesPagedLayouts for more details.
     - Valid Values -  must point to a OfxPluginEntryPoint
 
 If set, the parameter's normal interface is replaced completely by the interact gui.
+
+Currently custom interacts for parameters can only be drawn using OpenGL.
+APIs will be added later to support using the new Draw Suite.
 */
 #define kOfxParamPropInteractV1 "OfxParamPropInteractV1"
 
 /** @brief The size of a parameter instance's custom interface in screen pixels.
-
+  
   - Type - double x 2
   - Property Set - plugin parameter instance (read only)
 
@@ -279,7 +273,7 @@ A plug-in uses this property to indicate if a parameter is able to animate.
     - Type - int X 1
     - Property Set - param set instance (read/write)
     - Default - 0
-    - Valid Values -
+    - Valid Values - 
         - 0 - no need to sync
         - 1 - paramset is not synced
 
@@ -299,7 +293,7 @@ operation on the instance.
    modify the property).
 */
 #define kOfxPropParamSetNeedsSyncing "OfxPropParamSetNeedsSyncing"
-
+ 
 /** @brief Flags whether a parameter is currently animating.
 
     - Type - int x 1
@@ -337,7 +331,7 @@ This is used to tell the host whether the value of the parameter is important an
 */
 #define kOfxParamPropPersistant "OfxParamPropPersistant"
 
-/** @brief Flags whether changing a parameter's value forces an evalution (ie: render),
+/** @brief Flags whether changing a parameter's value forces an evaluation (ie: render),
 
     - Type - int x 1
     - Property Set - plugin parameter descriptor (read/write) and instance (read/write only)
@@ -409,15 +403,16 @@ rendered output. Think of the what happens when you add a new key frame.
 
 /** @brief The default value of a parameter.
 
-   - Type - The type is dependant on the parameter type as is the dimension.
+   - Type - The type is dependent on the parameter type as is the dimension.
    - Property Set - plugin parameter descriptor (read/write) and instance (read/write only),
    - Default - 0 cast to the relevant type (or "" for strings and custom parameters)
 
-The exact type and dimension is dependant on the type of the parameter. These are....
+The exact type and dimension is dependent on the type of the parameter. These are....
   - ::kOfxParamTypeInteger - integer property of one dimension
   - ::kOfxParamTypeDouble - double property of one dimension
   - ::kOfxParamTypeBoolean - integer property of one dimension
   - ::kOfxParamTypeChoice - integer property of one dimension
+  - ::kOfxParamTypeStrChoice - string property of one dimension
   - ::kOfxParamTypeRGBA - double property of four dimensions
   - ::kOfxParamTypeRGB - double property of three dimensions
   - ::kOfxParamTypeDouble2D - double property of two dimensions
@@ -426,21 +421,22 @@ The exact type and dimension is dependant on the type of the parameter. These ar
   - ::kOfxParamTypeInteger3D - integer property of three dimensions
   - ::kOfxParamTypeString - string property of one dimension
   - ::kOfxParamTypeCustom - string property of one dimension
+  - ::kOfxParamTypeBytes - pointer to OfxBytes struct of one dimension, or nullptr
   - ::kOfxParamTypeGroup - does not have this property
   - ::kOfxParamTypePage - does not have this property
   - ::kOfxParamTypePushButton - does not have this property
  */
 #define kOfxParamPropDefault "OfxParamPropDefault"
 
-/** @brief Describes how the double parameter should be interpreted by a host.
+/** @brief Describes how the double parameter should be interpreted by a host. 
 
    - Type - C string X 1
    - Default - ::kOfxParamDoubleTypePlain
    - Property Set - 1D, 2D and 3D float plugin parameter descriptor (read/write) and instance (read only),
    - Valid Values -This must be one of
       - ::kOfxParamDoubleTypePlain - parameter has no special interpretation,
-      - ::kOfxParamDoubleTypeAngle - parameter is to be interpretted as an angle,
-      - ::kOfxParamDoubleTypeScale - parameter is to be interpretted as a scale factor,
+      - ::kOfxParamDoubleTypeAngle - parameter is to be interpreted as an angle,
+      - ::kOfxParamDoubleTypeScale - parameter is to be interpreted as a scale factor,
       - ::kOfxParamDoubleTypeTime  - parameter represents a time value (1D only),
       - ::kOfxParamDoubleTypeAbsoluteTime  - parameter represents an absolute time value (1D only),
 
@@ -456,7 +452,7 @@ as to the interface of the parameter.
 */
 #define kOfxParamPropDoubleType "OfxParamPropDoubleType"
 
-/** @brief value for the ::kOfxParamPropDoubleType property, indicating the parameter has no special interpretation and should be interpretted as a raw numeric value. */
+/** @brief value for the ::kOfxParamPropDoubleType property, indicating the parameter has no special interpretation and should be interpreted as a raw numeric value. */
 #define kOfxParamDoubleTypePlain "OfxParamDoubleTypePlain"
 
 /** @brief value for the ::kOfxParamPropDoubleType property, indicating the parameter is to be interpreted as a scale factor. See \ref ::kOfxParamPropDoubleType. */
@@ -495,12 +491,12 @@ as to the interface of the parameter.
    - Type - C string X 1
    - Default - kOfxParamCoordinatesCanonical
    - Property Set - Non normalised spatial double parameters, ie: any double param who's ::kOfxParamPropDoubleType is set to one of...
-      - kOfxParamDoubleTypeX
-      - kOfxParamDoubleTypeXAbsolute
-      - kOfxParamDoubleTypeY
-      - kOfxParamDoubleTypeYAbsolute
-      - kOfxParamDoubleTypeXY
-      - kOfxParamDoubleTypeXYAbsolute
+      - kOfxParamDoubleTypeX 
+      - kOfxParamDoubleTypeXAbsolute 
+      - kOfxParamDoubleTypeY 
+      - kOfxParamDoubleTypeYAbsolute 
+      - kOfxParamDoubleTypeXY 
+      - kOfxParamDoubleTypeXYAbsolute 
    - Valid Values - This must be one of
       - kOfxParamCoordinatesCanonical - the default is in canonical coords
       - kOfxParamCoordinatesNormalised - the default is in normalised coordinates
@@ -518,7 +514,7 @@ This allows a spatial param to specify what its default is, so by saying normali
 /** @brief A flag to indicate if there is a host overlay UI handle for the given parameter.
 
     - Type - int x 1
-    - Property Set - plugin parameter descriptor (read only)
+    - Property Set - plugin parameter descriptor (read only) 
     - Valid Values - 0 or 1
 
 If set to 1, then the host is flagging that there is some sort of native user overlay interface handle available for the given parameter.
@@ -544,7 +540,7 @@ If set to 1, then a plugin is flaging to the host that the host should use a nat
     - Default - 0
     - Valid Values - 0 or 1
 
-If a double parameter is has ::kOfxParamPropDoubleType set to ::kOfxParamDoubleTypeAbsoluteTime, then this indicates whether
+If a double parameter is has ::kOfxParamPropDoubleType set to ::kOfxParamDoubleTypeAbsoluteTime, then this indicates whether 
 any marker should be made visible on the host's time line.
 
 */
@@ -587,7 +583,7 @@ By default parameters are added in order of declaration to the 'root' hierarchy.
 */
 #define kOfxParamPropParent "OfxParamPropParent"
 
-/** @brief Whether the initial state of a group is open or closed in a hierarchical layout.
+/** @brief Whether the initial state of a group is open or closed in a hierarchical layout. 
 
     - Type - int X 1
     - Property Set - plugin parameter descriptor (read/write) and instance (read only)
@@ -620,15 +616,90 @@ This data pointer is unique to each parameter instance, so two instances of the 
  */
 #define kOfxParamPropDataPtr "OfxParamPropDataPtr"
 
-/** @brief Set an option in a choice parameter.
+/** @brief Set options of a choice parameter.
 
     - Type - UTF8 C string X N
     - Property Set - plugin parameter descriptor (read/write) and instance (read/write),
     - Default - the property is empty with no options set.
 
-This property contains the set of options that will be presented to a user from a choice parameter. See @ref ParametersChoice for more details.
+This property contains the set of options that will be presented to a user
+from a choice parameter. See @ref ParametersChoice for more details.
 */
 #define kOfxParamPropChoiceOption "OfxParamPropChoiceOption"
+
+/** @brief Set values the host should store for a choice parameter.
+
+    - Type - int X N
+    - Property Set - plugin parameter descriptor (read/write) and instance
+(read/write),
+    - Default - Zero-based ordinal list of same length as
+`OfxParamPropChoiceOption`
+
+This property specifies the order in which the options are presented.
+See @ref "Choice Parameters" for more details.
+This property is optional; if not set, the host will present the options in
+their natural order.
+
+This property is useful when changing order of choice param options, or adding
+new options in the middle, in a new version of the plugin.
+
+  @verbatim
+  Plugin v1:
+  Option = {"OptA", "OptB", "OptC"}
+  Order = {1, 2, 3}
+
+  Plugin v2:
+  // will be shown as OptA / OptB / NewOpt / OptC
+  Option = {"OptA", "OptB", "OptC", NewOpt"}
+  Order = {1, 2, 4, 3}
+  @endverbatim
+
+Note that this only affects the host UI's display order; the project still
+stores the index of the selected option as always. Plugins should never
+reorder existing options if they desire backward compatibility.
+
+Values may be arbitrary 32-bit integers. Behavior is undefined if the same
+value occurs twice in the list; plugins should not do that.
+
+\since Version 1.5
+*/
+#define kOfxParamPropChoiceOrder "OfxParamPropChoiceOrder"
+
+
+/** @brief Set a enumeration string in a StrChoice (string-valued choice) parameter.
+
+    - Type - UTF8 C string X N
+    - Property Set - plugin parameter descriptor (read/write) and instance
+(read/write),
+    - Default - the property is empty with no options set.
+
+This property contains the set of enumeration strings stored by the host in
+the project corresponding to the options that will be presented to a user
+from a StrChoice parameter. See @ref ParametersChoice for more details.
+
+\since Version 1.5
+*/
+#define kOfxParamPropChoiceEnum "OfxParamPropChoiceEnum"
+
+/** @brief Indicates if the host supports animation of string choice params.
+
+    - Type - int X 1
+    - Property Set - host descriptor (read only)
+    - Valid Values - 0 or 1
+
+\since Version 1.5
+*/
+#define kOfxParamHostPropSupportsStrChoiceAnimation "OfxParamHostPropSupportsStrChoiceAnimation"
+
+/** @brief Indicates if the host supports the StrChoice param type.
+
+    - Type - int X 1
+    - Property Set - host descriptor (read only)
+    - Valid Values - 0 or 1
+
+\since Version 1.5
+*/
+#define kOfxParamHostPropSupportsStrChoice "OfxParamHostPropSupportsStrChoice"
 
 /** @brief The minimum value for a numeric parameter.
 
@@ -656,7 +727,7 @@ Setting this will also reset :;kOfxParamPropDisplayMax.
     - Property Set - plugin parameter descriptor (read/write) and instance (read/write),
     - Default - the smallest possible value corresponding to the parameter type (eg: INT_MIN for an integer, -DBL_MAX for a double parameter)
 
-If a user interface represents a parameter with a slider or similar, this should be the minumum bound on that slider.
+If a user interface represents a parameter with a slider or similar, this should be the minimum bound on that slider.
 */
 #define kOfxParamPropDisplayMin "OfxParamPropDisplayMin"
 
@@ -751,27 +822,27 @@ If set to 0, it implies the user can specify a new file name, not just a pre-exi
  */
 #define kOfxParamPropStringFilePathExists    "OfxParamPropStringFilePathExists"
 
-/** @brief Used to set a string parameter to be single line,
-    value to be passed to a kOfxParamPropStringMode property */
+/** @brief Used to set a string parameter to be single line, 
+    value to be passed to a ::kOfxParamPropStringMode property */
 #define kOfxParamStringIsSingleLine    "OfxParamStringIsSingleLine"
 
-/** @brief Used to set a string parameter to be multiple line,
-    value to be passed to a kOfxParamPropStringMode property */
+/** @brief Used to set a string parameter to be multiple line, 
+    value to be passed to a ::kOfxParamPropStringMode property */
 #define kOfxParamStringIsMultiLine     "OfxParamStringIsMultiLine"
 
 /** @brief Used to set a string parameter to be a file path,
-    value to be passed to a kOfxParamPropStringMode property */
+    value to be passed to a ::kOfxParamPropStringMode property */
 #define kOfxParamStringIsFilePath      "OfxParamStringIsFilePath"
 
 /** @brief Used to set a string parameter to be a directory path,
-    value to be passed to a kOfxParamPropStringMode property */
+    value to be passed to a ::kOfxParamPropStringMode property */
 #define kOfxParamStringIsDirectoryPath "OfxParamStringIsDirectoryPath"
 
-/** @brief Use to set a string parameter to be a simple label,
-    value to be passed to a kOfxParamPropStringMode property  */
+/** @brief Use to set a string parameter to be a simple label, 
+    value to be passed to a ::kOfxParamPropStringMode property  */
 #define kOfxParamStringIsLabel         "OfxParamStringIsLabel"
 
-/** @brief String value on the OfxParamPropStringMode property of a
+  /** @brief String value on the ::kOfxParamPropStringMode property of a
     string parameter (added in 1.3) */
 #define kOfxParamStringIsRichTextFormat "OfxParamStringIsRichTextFormat"
 
@@ -807,39 +878,39 @@ This property indicates how far between the two ::kOfxParamPropCustomValue keys 
 
 /** @brief Function prototype for custom parameter interpolation callback functions
 
-  \arg instance   the plugin instance that this parameter occurs in
-  \arg inArgs     handle holding the following properties...
+  \arg \c instance    the plugin instance that this parameter occurs in
+  \arg \c inArgs      handle holding the following properties...
     - kOfxPropName - the name of the custom parameter to interpolate
-    - kOfxPropTime - absolute time the interpolation is ocurring at
+    - kOfxPropTime - absolute time the interpolation is occurring at
     - kOfxParamPropCustomValue - string property that gives the value of the two keyframes to interpolate, in this case 2D
     - kOfxParamPropInterpolationTime - 2D double property that gives the time of the two keyframes we are interpolating
     - kOfxParamPropInterpolationAmount - 1D double property indicating how much to interpolate between the two keyframes
 
-  \arg outArgs handle holding the following properties to be set
+  \arg \c outArgs     handle holding the following properties to be set
     - kOfxParamPropCustomValue - the value of the interpolated custom parameter, in this case 1D
 
 This function allows custom parameters to animate by performing interpolation between keys.
 
-The plugin needs to parse the two strings encoding keyframes on either side of the time
+The plugin needs to parse the two strings encoding keyframes on either side of the time 
 we need a value for. It should then interpolate a new value for it, encode it into a string and set
 the ::kOfxParamPropCustomValue property with this on the outArgs handle.
 
 The interp value is a linear interpolation amount, however his may be derived from a cubic (or other) curve.
 */
 typedef OfxStatus (OfxCustomParamInterpFuncV1)(OfxParamSetHandle instance,
-                           OfxPropertySetHandle inArgs,
-                           OfxPropertySetHandle outArgs);
+					       OfxPropertySetHandle inArgs,
+					       OfxPropertySetHandle outArgs);
 
 
-/** @brief The OFX suite used to define and manipulate user visible parameters
+/** @brief The OFX suite used to define and manipulate user visible parameters 
  */
 typedef struct OfxParameterSuiteV1 {
   /** @brief Defines a new parameter of the given type in a describe action
 
-  \arg paramSet   handle to the parameter set descriptor that will hold this parameter
-  \arg paramType   type of the parameter to create, one of the kOfxParamType* #defines
-  \arg name        unique name of the parameter
-  \arg propertySet  if not null, a pointer to the parameter descriptor's property set will be placed here.
+  \arg \c paramSet    handle to the parameter set descriptor that will hold this parameter
+  \arg \c paramType   type of the parameter to create, one of the kOfxParamType* #defines
+  \arg \c name        unique name of the parameter
+  \arg \c propertySet if not null, a pointer to the parameter descriptor's property set will be placed here.
 
   This function defines a parameter in a parameter set and returns a property set which is used to describe that parameter.
 
@@ -856,18 +927,18 @@ typedef struct OfxParameterSuiteV1 {
   - ::kOfxStatErrUnsupported - if the type is known but unsupported
   */
   OfxStatus (*paramDefine)(OfxParamSetHandle paramSet,
-               const char *paramType,
-               const char *name,
-               OfxPropertySetHandle *propertySet);
+			   const char *paramType,
+			   const char *name,
+			   OfxPropertySetHandle *propertySet);
 
   /** @brief Retrieves the handle for a parameter in a given parameter set
 
-  \arg paramSet    instance of the plug-in to fetch the property handle from
-  \arg name        parameter to ask about
-  \arg param       pointer to a param handle, the value is returned here
-  \arg propertySet  if not null, a pointer to the parameter's property set will be placed here.
+  \arg \c paramSet    instance of the plug-in to fetch the property handle from
+  \arg \c name        parameter to ask about
+  \arg \c param       pointer to a param handle, the value is returned here
+  \arg \c propertySet if not null, a pointer to the parameter's property set will be placed here.
 
-  Parameter handles retrieved from an instance are always distinct in each instance. The paramter handle is valid for the life-time of the instance. Parameter handles in instances are distinct from paramter handles in plugins. You cannot call this in a plugin's describe function, as it needs an instance to work on.
+  Parameter handles retrieved from an instance are always distinct in each instance. The parameter handle is valid for the life-time of the instance. Parameter handles in instances are distinct from parameter handles in plugins. You cannot call this in a plugin's describe function, as it needs an instance to work on.
 
 @returns
   - ::kOfxStatOK       - the parameter was found and returned
@@ -875,44 +946,44 @@ typedef struct OfxParameterSuiteV1 {
   - ::kOfxStatErrUnknown    - if the type is unknown
   */
   OfxStatus (*paramGetHandle)(OfxParamSetHandle paramSet,
-                  const char *name,
-                  OfxParamHandle *param,
-                  OfxPropertySetHandle *propertySet);
+			      const char *name,
+			      OfxParamHandle *param,
+			      OfxPropertySetHandle *propertySet);
 
   /** @brief Retrieves the property set handle for the given parameter set
 
-  \arg paramSet      parameter set to get the property set for
-  \arg propHandle    pointer to a the property set handle, value is returedn her
+  \arg \c paramSet    parameter set to get the property set for
+  \arg \c propHandle  pointer to a the property set handle, value is returedn her
 
   \note The property handle belonging to a parameter set is the same as the property handle belonging to the plugin instance.
 
 @returns
   - ::kOfxStatOK       - the property set was found and returned
-  - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+  - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   - ::kOfxStatErrUnknown    - if the type is unknown
   */
   OfxStatus (*paramSetGetPropertySet)(OfxParamSetHandle paramSet,
-                      OfxPropertySetHandle *propHandle);
+				      OfxPropertySetHandle *propHandle);
 
   /** @brief Retrieves the property set handle for the given parameter
 
-  \arg param         parameter to get the property set for
-  \arg propHandle    pointer to a the property set handle, value is returedn her
+  \arg \c param       parameter to get the property set for
+  \arg \c propHandle  pointer to a the property set handle, value is returedn her
 
   The property handle is valid for the lifetime of the parameter, which is the lifetime of the instance that owns the parameter
 
 @returns
   - ::kOfxStatOK       - the property set was found and returned
-  - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+  - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   - ::kOfxStatErrUnknown    - if the type is unknown
   */
   OfxStatus (*paramGetPropertySet)(OfxParamHandle param,
-                   OfxPropertySetHandle *propHandle);
+				   OfxPropertySetHandle *propHandle);
 
   /** @brief Gets the current value of a parameter,
 
-  \arg paramHandle parameter handle to fetch value from
-  \arg ...         one or more pointers to variables of the relevant type to hold the parameter's value
+  \arg \c paramHandle parameter handle to fetch value from
+  \arg \c ...         one or more pointers to variables of the relevant type to hold the parameter's value
 
   This gets the current value of a parameter. The varargs ... argument needs to be pointer to C variables
   of the relevant type for this parameter. Note that params with multiple values (eg Colour) take
@@ -928,21 +999,21 @@ typedef struct OfxParameterSuiteV1 {
   ofxHost->paramGetValue(myColourParam, &myR, &myG, &myB);
   @endverbatim
 
-  \note paramGetValue should only be called from within a ::kOfxActionInstanceChanged or interact action and never from the render actions (which should always use paramGetValueAtTime).
+  \note \c paramGetValue should only be called from within a ::kOfxActionInstanceChanged or interact action and never from the render actions (which should always use paramGetValueAtTime).
 
 @returns
   - ::kOfxStatOK       - all was OK
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramGetValue)(OfxParamHandle  paramHandle,
-                 ...);
+			     ...);
 
 
   /** @brief Gets the value of a parameter at a specific time.
 
-  \arg paramHandle parameter handle to fetch value from
-  \arg time       at what point in time to look up the parameter
-  \arg ...        one or more pointers to variables of the relevant type to hold the parameter's value
+  \arg \c paramHandle parameter handle to fetch value from
+  \arg \c time        at what point in time to look up the parameter
+  \arg \c ...         one or more pointers to variables of the relevant type to hold the parameter's value
 
   This gets the current value of a parameter. The varargs needs to be pointer to C variables
   of the relevant type for this parameter. See OfxParameterSuiteV1::paramGetValue for notes on
@@ -953,16 +1024,16 @@ typedef struct OfxParameterSuiteV1 {
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramGetValueAtTime)(OfxParamHandle  paramHandle,
-                   OfxTime time,
-                   ...);
+				   OfxTime time,
+				   ...);
 
   /** @brief Gets the derivative of a parameter at a specific time.
 
-  \arg paramHandle parameter handle to fetch value from
-  \arg time       at what point in time to look up the parameter
-  \arg ...        one or more pointers to variables of the relevant type to hold the parameter's derivative
+  \arg \c paramHandle parameter handle to fetch value from
+  \arg \c time        at what point in time to look up the parameter
+  \arg \c ...         one or more pointers to variables of the relevant type to hold the parameter's derivative
 
-  This gets the derivative of the parameter at the indicated time.
+  This gets the derivative of the parameter at the indicated time. 
 
   The varargs needs to be pointer to C variables
   of the relevant type for this parameter. See OfxParameterSuiteV1::paramGetValue for notes on
@@ -975,15 +1046,15 @@ typedef struct OfxParameterSuiteV1 {
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramGetDerivative)(OfxParamHandle  paramHandle,
-                  OfxTime time,
-                  ...);
+				  OfxTime time,
+				  ...);
 
   /** @brief Gets the integral of a parameter over a specific time range,
 
-  \arg paramHandle parameter handle to fetch integral from
-  \arg time1      where to start evaluating the integral
-  \arg time2      where to stop evaluating the integral
-  \arg ...        one or more pointers to variables of the relevant type to hold the parameter's integral
+  \arg \c paramHandle parameter handle to fetch integral from
+  \arg \c time1       where to start evaluating the integral
+  \arg \c time2       where to stop evaluating the integral
+  \arg \c ...         one or more pointers to variables of the relevant type to hold the parameter's integral
 
   This gets the integral of the parameter over the specified time range.
 
@@ -998,13 +1069,13 @@ typedef struct OfxParameterSuiteV1 {
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramGetIntegral)(OfxParamHandle  paramHandle,
-                OfxTime time1, OfxTime time2,
-                ...);
+				OfxTime time1, OfxTime time2,
+				...);
 
   /** @brief Sets the current value of a parameter
 
-  \arg paramHandle parameter handle to set value in
-  \arg ...        one or more variables of the relevant type to hold the parameter's value
+  \arg \c paramHandle parameter handle to set value in
+  \arg \c ...         one or more variables of the relevant type to hold the parameter's value
 
   This sets the current value of a parameter. The varargs ... argument needs to be values
   of the relevant type for this parameter. Note that params with multiple values (eg Colour) take
@@ -1014,36 +1085,36 @@ typedef struct OfxParameterSuiteV1 {
   ofxHost->paramSetValue(instance, "myColourParam", double(pix.r), double(pix.g), double(pix.b));
   @endverbatim
 
-  \note paramSetValue should only be called from within a ::kOfxActionInstanceChanged or interact action.
+  \note \c paramSetValue should only be called from within a ::kOfxActionInstanceChanged or interact action.
 
 @returns
   - ::kOfxStatOK       - all was OK
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramSetValue)(OfxParamHandle  paramHandle,
-                 ...);
+			     ...);
 
   /** @brief Keyframes the value of a parameter at a specific time.
 
-  \arg paramHandle parameter handle to set value in
-  \arg time       at what point in time to set the keyframe
-  \arg ...        one or more variables of the relevant type to hold the parameter's value
+  \arg \c paramHandle parameter handle to set value in
+  \arg \c time        at what point in time to set the keyframe
+  \arg \c ...         one or more variables of the relevant type to hold the parameter's value
 
   This sets a keyframe in the parameter at the indicated time to have the indicated value.
-  The varargs ... argument needs to be values of the relevant type for this parameter. See the note on
+  The varargs ... argument needs to be values of the relevant type for this parameter. See the note on 
   OfxParameterSuiteV1::paramSetValue for more detail
 
-  \note paramSetValueAtTime should only be called from within a ::kOfxActionInstanceChanged or interact action.
+  \note \c paramSetValueAtTime should only be called from within a ::kOfxActionInstanceChanged or interact action.
 
   V1.3: This function can be called the ::kOfxActionInstanceChanged action and during image effect analysis render passes.
-  V1.4: This function can be called the ::kOfxActionInstanceChanged action
+  V1.4: This function can be called the ::kOfxActionInstanceChanged action 
 @returns
   - ::kOfxStatOK       - all was OK
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramSetValueAtTime)(OfxParamHandle  paramHandle,
-                   OfxTime time,  // time in frames
-                   ...);
+				   OfxTime time,  // time in frames
+				   ...);
 
 
 /** @name Keyframe Handling
@@ -1062,11 +1133,11 @@ changes a keyframe.  The keyframe indices will not change within a single action
 
   /** @brief Returns the number of keyframes in the parameter
 
-  \arg paramHandle parameter handle to interogate
-  \arg numberOfKeys  pointer to integer where the return value is placed
+  \arg \c paramHandle parameter handle to interrogate
+  \arg \c numberOfKeys pointer to integer where the return value is placed
 
   V1.3: This function can be called the ::kOfxActionInstanceChanged action and during image effect analysis render passes.
-  V1.4: This function can be called the ::kOfxActionInstanceChanged action
+  V1.4: This function can be called the ::kOfxActionInstanceChanged action 
 
   Returns the number of keyframes in the parameter.
 
@@ -1075,13 +1146,13 @@ changes a keyframe.  The keyframe indices will not change within a single action
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramGetNumKeys)(OfxParamHandle  paramHandle,
-                   unsigned int  *numberOfKeys);
+			       unsigned int  *numberOfKeys);
 
   /** @brief Returns the time of the nth key
 
-  \arg paramHandle parameter handle to interogate
-  \arg nthKey      which key to ask about (0 to paramGetNumKeys -1), ordered by time
-  \arg time   pointer to OfxTime where the return value is placed
+  \arg \c paramHandle parameter handle to interrogate
+  \arg \c nthKey      which key to ask about (0 to paramGetNumKeys -1), ordered by time
+  \arg \c time	   pointer to OfxTime where the return value is placed
 
 @returns
   - ::kOfxStatOK       - all was OK
@@ -1089,19 +1160,19 @@ changes a keyframe.  The keyframe indices will not change within a single action
   - ::kOfxStatErrBadIndex   - the nthKey does not exist
   */
   OfxStatus (*paramGetKeyTime)(OfxParamHandle  paramHandle,
-                   unsigned int nthKey,
-                   OfxTime *time);
+			       unsigned int nthKey,
+			       OfxTime *time);
 
 
   /** @brief Finds the index of a keyframe at/before/after a specified time.
 
-  \arg paramHandle parameter handle to search
-  \arg time          what time to search from
-  \arg direction
+  \arg \c paramHandle parameter handle to search
+  \arg \c time        what time to search from
+  \arg \c direction
     - == 0 indicates search for a key at the indicated time (some small delta)
     - > 0 indicates search for the next key after the indicated time
     - < 0 indicates search for the previous key before the indicated time
-  \arg index       pointer to an integer which in which the index is returned set to -1 if no key was found
+  \arg \c index	   pointer to an integer which in which the index is returned set to -1 if no key was found
 
 @returns
   - ::kOfxStatOK            - all was OK
@@ -1109,14 +1180,14 @@ changes a keyframe.  The keyframe indices will not change within a single action
   - ::kOfxStatErrBadHandle  - if the parameter handle was invalid
   */
   OfxStatus (*paramGetKeyIndex)(OfxParamHandle  paramHandle,
-                OfxTime time,
-                int     direction,
-                int    *index);
+				OfxTime time,
+				int     direction,
+				int    *index);
 
   /** @brief Deletes a keyframe if one exists at the given time.
 
-  \arg paramHandle parameter handle to delete the key from
-  \arg time      time at which a keyframe is
+  \arg \c paramHandle parameter handle to delete the key from
+  \arg \c time        time at which a keyframe is
 
 @returns
   - ::kOfxStatOK       - all was OK
@@ -1124,15 +1195,15 @@ changes a keyframe.  The keyframe indices will not change within a single action
   - ::kOfxStatErrBadIndex   - no key at the given time
   */
   OfxStatus (*paramDeleteKey)(OfxParamHandle  paramHandle,
-                  OfxTime time);
+			      OfxTime time);
 
   /** @brief Deletes all keyframes from a parameter.
 
-  \arg paramHandle parameter handle to delete the keys from
-  \arg name      parameter to delete the keyframes frome is
+  \arg \c paramHandle parameter handle to delete the keys from
+  \arg \c name        parameter to delete the keyframes from is
 
   V1.3: This function can be called the ::kOfxActionInstanceChanged action and during image effect analysis render passes.
-  V1.4: This function can be called the ::kOfxActionInstanceChanged action
+  V1.4: This function can be called the ::kOfxActionInstanceChanged action 
 
 @returns
   - ::kOfxStatOK       - all was OK
@@ -1144,17 +1215,17 @@ changes a keyframe.  The keyframe indices will not change within a single action
 
   /** @brief Copies one parameter to another, including any animation etc...
 
-  \arg paramTo  parameter to set
-  \arg paramFrom parameter to copy from
-  \arg dstOffset temporal offset to apply to keys when writing to the paramTo
-  \arg frameRange if paramFrom has animation, and frameRange is not null, only this range of keys will be copied
+  \arg \c paramTo     parameter to set
+  \arg \c paramFrom   parameter to copy from
+  \arg \c dstOffset   temporal offset to apply to keys when writing to the paramTo
+  \arg \c frameRange  if paramFrom has animation, and frameRange is not null, only this range of keys will be copied
 
   This copies the value of \e paramFrom to \e paramTo, including any animation it may have. All the previous values in \e paramTo will be lost.
 
   To choose all animation in \e paramFrom set \e frameRange to [0, 0]
 
    V1.3: This function can be called the ::kOfxActionInstanceChanged action and during image effect analysis render passes.
-  V1.4: This function can be called the ::kOfxActionInstanceChanged action
+  V1.4: This function can be called the ::kOfxActionInstanceChanged action 
 
   \pre
   - Both parameters must be of the same type.
@@ -1168,14 +1239,14 @@ changes a keyframe.  The keyframe indices will not change within a single action
 
   /** @brief Used to group any parameter changes for undo/redo purposes
 
-  \arg paramSet   the parameter set in which this is happening
-  \arg name       label to attach to any undo/redo string UTF8
+  \arg \c paramSet    the parameter set in which this is happening
+  \arg \c name        label to attach to any undo/redo string UTF8
 
   If a plugin calls paramSetValue/paramSetValueAtTime on one or more parameters, either from custom GUI interaction
   or some analysis of imagery etc.. this is used to indicate the start of a set of a parameter
   changes that should be considered part of a single undo/redo block.
 
-  \note paramEditBegin should only be called from within a ::kOfxActionInstanceChanged or interact action.
+  \note \c paramEditBegin should only be called from within a ::kOfxActionInstanceChanged or interact action.
 
   See also OfxParameterSuiteV1::paramEditEnd
 
@@ -1184,17 +1255,17 @@ changes a keyframe.  The keyframe indices will not change within a single action
   - ::kOfxStatErrBadHandle  - if the instance handle was invalid
 
   */
-  OfxStatus (*paramEditBegin)(OfxParamSetHandle paramSet, const char *name);
+  OfxStatus (*paramEditBegin)(OfxParamSetHandle paramSet, const char *name); 
 
   /** @brief Used to group any parameter changes for undo/redo purposes
 
-  \arg paramSet   the parameter set in which this is happening
+  \arg \c paramSet    parameter set in which this is happening
 
   If a plugin calls paramSetValue/paramSetValueAtTime on one or more parameters, either from custom GUI interaction
   or some analysis of imagery etc.. this is used to indicate the end of a set of parameter
   changes that should be considerred part of a single undo/redo block
 
-  \note paramEditEnd should only be called from within a ::kOfxActionInstanceChanged or interact action.
+  \note \c paramEditEnd should only be called from within a ::kOfxActionInstanceChanged or interact action.
 
   See also OfxParameterSuiteV1::paramEditBegin
 
@@ -1212,7 +1283,7 @@ changes a keyframe.  The keyframe indices will not change within a single action
 
 
 /** @file ofxParam.h
-
+ 
   This header contains the suite definition to manipulate host side parameters.
 
   For more details go see @ref ParametersPage

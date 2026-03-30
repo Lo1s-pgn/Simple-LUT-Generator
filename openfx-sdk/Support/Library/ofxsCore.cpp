@@ -1,40 +1,7 @@
-/*
-OFX Support Library, a library that skins the OFX plug-in API with C++ classes.
-Copyright (C) 2004-2005 The Open Effects Association Ltd
-Author Bruno Nicoletti bruno@thefoundry.co.uk
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-* Neither the name The Open Effects Association Ltd, nor the names of its
-contributors may be used to endorse or promote products derived from this
-software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The Open Effects Association Ltd
-1 Wardour St
-London W1D 6PA
-England
-
-
-*/
+// Copyright OpenFX and contributors to the OpenFX project.
+// SPDX-License-Identifier: BSD-3-Clause
 #include "ofxsSupportPrivate.h"
-#ifdef DEBUG_BUILD
+#ifdef DEBUG
 #include <iostream>
 #if defined(__APPLE__) || defined(linux)
 #include <execinfo.h>
@@ -43,13 +10,12 @@ England
 #endif
 
 #include "ofxsMemory.h"
-#include "ofxsLog.h"
 
 namespace OFX {
   /** @brief Throws an @ref OFX::Exception depending on the status flag passed in */
-  void throwSuiteStatusException(OfxStatus stat) throw(OFX::Exception::Suite, std::bad_alloc)
+  void throwSuiteStatusException(OfxStatus stat)
   {
-    switch (stat)
+    switch (stat) 
     {
     case kOfxStatOK :
     case kOfxStatReplyYes :
@@ -61,16 +27,14 @@ namespace OFX {
       throw std::bad_alloc();
 
     default :
-#    ifdef DEBUG_BUILD
+#    ifdef DEBUG
       std::cout << "Threw suite exception!" << std::endl;
-      OFX::Log::print("\nThrew suite exception %s:", mapStatusToString(stat));
 #     if defined(__APPLE__) || defined(linux)
       void* callstack[128];
       int i, frames = backtrace(callstack, 128);
       char** strs = backtrace_symbols(callstack, frames);
       for (i = 0; i < frames; ++i) {
           std::cout << strs[i] << std::endl;
-          OFX::Log::print(strs[i]);
       }
       free(strs);
 #     endif
@@ -79,9 +43,9 @@ namespace OFX {
     }
   }
 
-  void throwHostMissingSuiteException(std::string name) throw(OFX::Exception::Suite)
+  void throwHostMissingSuiteException(std::string name)
   {
-#  ifdef DEBUG_BUILD
+#  ifdef DEBUG
     std::cout << "Threw suite exception! Host missing '" << name << "' suite." << std::endl;
 #   if defined(__APPLE__) || defined(linux)
     void* callstack[128];
@@ -100,8 +64,8 @@ namespace OFX {
   /** @brief maps status to a string */
   const char* mapStatusToString(OfxStatus stat)
   {
-    switch(stat)
-    {
+    switch(stat) 
+    {    
     case kOfxStatOK             : return "kOfxStatOK";
     case kOfxStatFailed         : return "kOfxStatFailed";
     case kOfxStatErrFatal       : return "kOfxStatErrFatal";
@@ -126,7 +90,7 @@ namespace OFX {
   /** @brief namespace for memory allocation that is done via wrapping the ofx memory suite */
   namespace Memory {
     /** @brief allocate n bytes, returns a pointer to it */
-    void *allocate(size_t nBytes, ImageEffect *effect) throw(std::bad_alloc)
+    void *allocate(size_t nBytes, ImageEffect *effect)
     {
       void *data = 0;
       OfxStatus stat = OFX::Private::gMemorySuite->memoryAlloc((void *)(effect ? effect->getHandle() : 0), nBytes, &data);
@@ -140,7 +104,7 @@ namespace OFX {
     {
       if(ptr)
         // note we are ignore errors, this could be bad, but we don't throw on a destruction
-        OFX::Private::gMemorySuite->memoryFree(ptr);
+        OFX::Private::gMemorySuite->memoryFree(ptr);            
     }
 
   };
