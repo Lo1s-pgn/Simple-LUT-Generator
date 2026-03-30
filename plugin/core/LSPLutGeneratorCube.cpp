@@ -12,6 +12,51 @@ struct AccumCell {
     double b;
     int count;
 };
+
+void sampleCubeRgbTriLinear(const float* p_Cube, int p_N, double p_Fr, double p_Fg, double p_Fb, double* p_OutRgb) {
+    const double nm1 = static_cast<double>(p_N - 1);
+    const double fr = std::clamp(p_Fr, 0.0, nm1);
+    const double fg = std::clamp(p_Fg, 0.0, nm1);
+    const double fb = std::clamp(p_Fb, 0.0, nm1);
+    const int ir0 = static_cast<int>(std::floor(fr));
+    const int ig0 = static_cast<int>(std::floor(fg));
+    const int ib0 = static_cast<int>(std::floor(fb));
+    const int ir1 = std::min(ir0 + 1, p_N - 1);
+    const int ig1 = std::min(ig0 + 1, p_N - 1);
+    const int ib1 = std::min(ib0 + 1, p_N - 1);
+    const double tr = fr - static_cast<double>(ir0);
+    const double tg = fg - static_cast<double>(ig0);
+    const double tb = fb - static_cast<double>(ib0);
+    auto cell = [p_Cube, p_N](int ir, int ig, int ib) -> const float* {
+        const size_t idx = (size_t)ir + (size_t)p_N * ((size_t)ig + (size_t)p_N * (size_t)ib);
+        return p_Cube + idx * 4u;
+    };
+    const float* p000 = cell(ir0, ig0, ib0);
+    const float* p100 = cell(ir1, ig0, ib0);
+    const float* p010 = cell(ir0, ig1, ib0);
+    const float* p110 = cell(ir1, ig1, ib0);
+    const float* p001 = cell(ir0, ig0, ib1);
+    const float* p101 = cell(ir1, ig0, ib1);
+    const float* p011 = cell(ir0, ig1, ib1);
+    const float* p111 = cell(ir1, ig1, ib1);
+    for (int c = 0; c < 3; ++c) {
+        const double c000 = p000[c];
+        const double c100 = p100[c];
+        const double c010 = p010[c];
+        const double c110 = p110[c];
+        const double c001 = p001[c];
+        const double c101 = p101[c];
+        const double c011 = p011[c];
+        const double c111 = p111[c];
+        const double c00 = c000 + tr * (c100 - c000);
+        const double c01 = c001 + tr * (c101 - c001);
+        const double c10 = c010 + tr * (c110 - c010);
+        const double c11 = c011 + tr * (c111 - c011);
+        const double c0 = c00 + tg * (c10 - c00);
+        const double c1 = c01 + tg * (c11 - c01);
+        p_OutRgb[c] = c0 + tb * (c1 - c0);
+    }
+}
 } // namespace
 
 bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba) {
@@ -30,8 +75,6 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
 
     const size_t n3 = (size_t)p_N * (size_t)p_N * (size_t)p_N;
     std::vector<AccumCell> acc(n3);
-    for (size_t i = 0; i < n3; ++i)
-        acc[i] = { 0.0, 0.0, 0.0, 0 };
 
     const int nm1 = p_N - 1;
     for (int y = B.y1; y < B.y2; ++y) {
@@ -118,73 +161,6 @@ bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst,
     }
     return true;
 }
-
-namespace {
-void sampleCubeRgbTriLinear(const float* p_Cube, int p_N, double p_Fr, double p_Fg, double p_Fb, double* p_OutRgb) {
-    const double nm1 = static_cast<double>(p_N - 1);
-    double fr = std::clamp(p_Fr, 0.0, nm1);
-    double fg = std::clamp(p_Fg, 0.0, nm1);
-    double fb = std::clamp(p_Fb, 0.0, nm1);
-    const int ir0 = static_cast<int>(std::floor(fr));
-    const int ig0 = static_cast<int>(std::floor(fg));
-    const int ib0 = static_cast<int>(std::floor(fb));
-    const int ir1 = std::min(ir0 + 1, p_N - 1);
-    const int ig1 = std::min(ig0 + 1, p_N - 1);
-    const int ib1 = std::min(ib0 + 1, p_N - 1);
-    const double tr = fr - static_cast<double>(ir0);
-    const double tg = fg - static_cast<double>(ig0);
-    const double tb = fb - static_cast<double>(ib0);
-    auto at = [p_Cube, p_N](int ir, int ig, int ib) -> const float* {
-        const size_t idx = (size_t)ir + (size_t)p_N * ((size_t)ig + (size_t)p_N * (size_t)ib);
-        return p_Cube + idx * 4u;
-    };
-    const double c000r = at(ir0, ig0, ib0)[0];
-    const double c000g = at(ir0, ig0, ib0)[1];
-    const double c000b = at(ir0, ig0, ib0)[2];
-    const double c100r = at(ir1, ig0, ib0)[0];
-    const double c100g = at(ir1, ig0, ib0)[1];
-    const double c100b = at(ir1, ig0, ib0)[2];
-    const double c010r = at(ir0, ig1, ib0)[0];
-    const double c010g = at(ir0, ig1, ib0)[1];
-    const double c010b = at(ir0, ig1, ib0)[2];
-    const double c110r = at(ir1, ig1, ib0)[0];
-    const double c110g = at(ir1, ig1, ib0)[1];
-    const double c110b = at(ir1, ig1, ib0)[2];
-    const double c001r = at(ir0, ig0, ib1)[0];
-    const double c001g = at(ir0, ig0, ib1)[1];
-    const double c001b = at(ir0, ig0, ib1)[2];
-    const double c101r = at(ir1, ig0, ib1)[0];
-    const double c101g = at(ir1, ig0, ib1)[1];
-    const double c101b = at(ir1, ig0, ib1)[2];
-    const double c011r = at(ir0, ig1, ib1)[0];
-    const double c011g = at(ir0, ig1, ib1)[1];
-    const double c011b = at(ir0, ig1, ib1)[2];
-    const double c111r = at(ir1, ig1, ib1)[0];
-    const double c111g = at(ir1, ig1, ib1)[1];
-    const double c111b = at(ir1, ig1, ib1)[2];
-    const double c00r = c000r + tr * (c100r - c000r);
-    const double c00g = c000g + tr * (c100g - c000g);
-    const double c00b = c000b + tr * (c100b - c000b);
-    const double c01r = c001r + tr * (c101r - c001r);
-    const double c01g = c001g + tr * (c101g - c001g);
-    const double c01b = c001b + tr * (c101b - c001b);
-    const double c10r = c010r + tr * (c110r - c010r);
-    const double c10g = c010g + tr * (c110g - c010g);
-    const double c10b = c010b + tr * (c110b - c010b);
-    const double c11r = c011r + tr * (c111r - c011r);
-    const double c11g = c011g + tr * (c111g - c011g);
-    const double c11b = c011b + tr * (c111b - c011b);
-    const double c0r = c00r + tg * (c10r - c00r);
-    const double c0g = c00g + tg * (c10g - c00g);
-    const double c0b = c00b + tg * (c10b - c00b);
-    const double c1r = c01r + tg * (c11r - c01r);
-    const double c1g = c01g + tg * (c11g - c01g);
-    const double c1b = c01b + tg * (c11b - c01b);
-    p_OutRgb[0] = c0r + tb * (c1r - c0r);
-    p_OutRgb[1] = c0g + tb * (c1g - c0g);
-    p_OutRgb[2] = c0b + tb * (c1b - c0b);
-}
-} // namespace
 
 bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba) {
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2)

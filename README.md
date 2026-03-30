@@ -83,10 +83,10 @@ Prebuilt bundles may be blocked by Gatekeeper.
 Adjust the bundle name to match your installed version, then run:
 
 ```bash
-sudo chmod -R 755 /Library/OFX/Plugins/LSP_LutGenerator_1.0.0.ofx.bundle
-sudo chown -R root:wheel /Library/OFX/Plugins/LSP_LutGenerator_1.0.0.ofx.bundle
-sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_LutGenerator_1.0.0.ofx.bundle
-sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_LutGenerator_1.0.0.ofx.bundle
+sudo chmod -R 755 /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
+sudo chown -R root:wheel /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
+sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
+sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
 ```
 
 Then relaunch DaVinci Resolve.

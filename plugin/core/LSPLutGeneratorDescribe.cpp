@@ -51,22 +51,20 @@ void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::Cont
     exportPb->setParent(*mainG);
 
     OFX::GroupParamDescriptor* supportG = addGroup(p_Desc, "lutGenSupportGroup", "SUPPORT", "Info and log.", false);
-    {
-        OFX::StringParamDescriptor* creditsParam = p_Desc.defineStringParam("lutGenCreditsLabel");
-        creditsParam->setLabels("Credits", "Credits", "Credits");
-        creditsParam->setDefault("Made by Loïs Plagnard");
-        creditsParam->setStringType(OFX::eStringTypeLabel);
-        creditsParam->setAnimates(false);
-        creditsParam->setParent(*supportG);
-        OFX::PushButtonParamDescriptor* helpBtn = p_Desc.definePushButtonParam("lutGenHelp");
-        helpBtn->setLabels("Help", "Help", "Help");
-        helpBtn->setHint("Open the project repository on GitHub.");
-        helpBtn->setParent(*supportG);
-        OFX::PushButtonParamDescriptor* openLogBtn = p_Desc.definePushButtonParam("lutGenOpenLog");
-        openLogBtn->setLabels("Open Log", "Open Log", "Open Log");
-        openLogBtn->setHint("Open LutGenerator.log (~/Library/Application Support/LSP/).");
-        openLogBtn->setParent(*supportG);
-    }
+    OFX::StringParamDescriptor* creditsParam = p_Desc.defineStringParam("lutGenCreditsLabel");
+    creditsParam->setLabels("Credits", "Credits", "Credits");
+    creditsParam->setDefault("Made by Loïs Plagnard");
+    creditsParam->setStringType(OFX::eStringTypeLabel);
+    creditsParam->setAnimates(false);
+    creditsParam->setParent(*supportG);
+    OFX::PushButtonParamDescriptor* helpBtn = p_Desc.definePushButtonParam("lutGenHelp");
+    helpBtn->setLabels("Help", "Help", "Help");
+    helpBtn->setHint("Open the project repository on GitHub.");
+    helpBtn->setParent(*supportG);
+    OFX::PushButtonParamDescriptor* openLogBtn = p_Desc.definePushButtonParam("lutGenOpenLog");
+    openLogBtn->setLabels("Open Log", "Open Log", "Open Log");
+    openLogBtn->setHint("Open LutGenerator.log (~/Library/Application Support/LSP/).");
+    openLogBtn->setParent(*supportG);
 
     page->addChild(*mainG);
     page->addChild(*supportG);

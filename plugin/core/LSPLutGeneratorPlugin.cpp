@@ -8,7 +8,6 @@
 #include "LSPLutGeneratorPattern.h"
 #include "version_gen.h"
 #include "ofxsCore.h"
-#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -221,7 +220,7 @@ void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
     proc.setDstImg(dst.get());
     proc.setSrcImg(src.get());
     proc.setOperationMode(mode);
-    proc.setDstFullBounds(dst->getBounds());
+    proc.setDstFullBounds(db);
     proc.setGenerateLutN(nUse);
     proc.setRenderWindow(p_Args.renderWindow);
     proc.process();

@@ -15,7 +15,7 @@
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>
-    <string>@PLUGIN_NUMERIC_VERSION@</string>
+    <string>@PLUGIN_DISPLAY_VERSION@</string>
     <key>CFBundleVersion</key>
     <string>@PLUGIN_NUMERIC_VERSION@</string>
     <key>NSPrincipalClass</key>

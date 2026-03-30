@@ -1,15 +1,16 @@
 # LSP LUT Generator OFX — macOS (CPU-only render)
-# VERSION (first line) = MAJ.MIN.PATCH (e.g. 1.0.0) → PLUGIN_VERSION_STR and bundle LSP_LutGenerator_<version>.ofx.bundle
+# VERSION (first line) = MAJ.MIN.PATCH [optional label] (e.g. 1.0.0 or 1.0.1 beta) → triplet for bundle/OFX id; full line for display string
 # Intermediates (.o, linked .ofx, Info.plist) → build/ ; installable .ofx.bundle → release/
 
 BUILDDIR := build
 DISTDIR := release
 VERSION_FILE := VERSION
 VERSION_GEN := plugin/version_gen.h
-VERSION_LINE := $(shell head -n1 $(VERSION_FILE) 2>/dev/null | tr -d ' \r\n')
-VERSION_MAJ := $(shell echo "$(VERSION_LINE)" | cut -d. -f1)
-VERSION_MIN := $(shell echo "$(VERSION_LINE)" | cut -d. -f2)
-VERSION_PATCH := $(shell echo "$(VERSION_LINE)" | cut -d. -f3)
+VERSION_RAW := $(shell head -n1 $(VERSION_FILE) 2>/dev/null | sed 's/\r$$//')
+VERSION_TRIPLET := $(shell echo "$(VERSION_RAW)" | awk '{print $$1}')
+VERSION_MAJ := $(shell echo "$(VERSION_TRIPLET)" | cut -d. -f1)
+VERSION_MIN := $(shell echo "$(VERSION_TRIPLET)" | cut -d. -f2)
+VERSION_PATCH := $(shell echo "$(VERSION_TRIPLET)" | cut -d. -f3)
 PLUGIN_DISPLAY := $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_PATCH)
 OFX_BUNDLE_STEM := LSP_LutGenerator_$(PLUGIN_DISPLAY)
 OFX_BUNDLE := $(DISTDIR)/$(OFX_BUNDLE_STEM).ofx.bundle
@@ -61,25 +62,27 @@ $(OFX_BUNDLE): $(OFX_BINARY) $(BUILDDIR)/Info.plist $(VERSION_GEN)
 	echo "Bundle ready: $(OFX_BUNDLE) (executable $$exe OK)"
 
 $(VERSION_GEN) $(BUILDDIR)/Info.plist: Info.plist.in $(VERSION_FILE) | $(BUILDDIR)
-	@v=$$(head -n1 $(VERSION_FILE) | tr -d ' \r\n'); \
-	maj=$$(echo "$$v" | cut -d. -f1); min=$$(echo "$$v" | cut -d. -f2); pat=$$(echo "$$v" | cut -d. -f3); \
-	display="$$maj.$$min.$$pat"; \
+	@raw=$$(head -n1 $(VERSION_FILE) | sed 's/\r$$//'); \
+	triplet=$$(echo "$$raw" | awk '{print $$1}'); \
+	suffix=$$(echo "$$raw" | cut -s -d' ' -f2-); \
+	maj=$$(echo "$$triplet" | cut -d. -f1); min=$$(echo "$$triplet" | cut -d. -f2); pat=$$(echo "$$triplet" | cut -d. -f3); \
 	numeric="$$maj.$$min.$$pat"; \
-	ofxid="com.LSP.LutGenerator.$$display"; \
-	{ echo "/* Generated from VERSION (first line) = MAJ.MIN.PATCH — do not edit */"; \
+	if [ -n "$$suffix" ]; then display="$$triplet $$suffix"; else display="$$numeric"; fi; \
+	ofxid="com.LSP.LutGenerator.$$numeric"; \
+	{ echo "/* Generated from VERSION (first line) — do not edit */"; \
 	  echo "#ifndef VERSION_GEN_H"; \
 	  echo "#define VERSION_GEN_H"; \
 	  echo "#define PLUGIN_VERSION_STR \"$$display\""; \
 	  echo "#define PLUGIN_VERSION_MAJOR $$maj"; \
 	  echo "#define PLUGIN_VERSION_MINOR $$min"; \
 	  echo "#define PLUGIN_VERSION_PATCH $$pat"; \
-	  echo "#define PLUGIN_CHANGELOG_TRIPLET \"$$v\""; \
 	  echo "#define PLUGIN_OFX_IDENTIFIER \"$$ofxid\""; \
 	  echo "#endif"; \
 	} > $(VERSION_GEN); \
-	stem="LSP_LutGenerator_$$display"; \
+	stem="LSP_LutGenerator_$$numeric"; \
 	exe="$$stem.ofx"; \
 	sed -e "s|@PLUGIN_NUMERIC_VERSION@|$$numeric|g" \
+	    -e "s|@PLUGIN_DISPLAY_VERSION@|$$display|g" \
 	    -e "s|@OFX_EXECUTABLE_NAME@|$$exe|g" Info.plist.in > $(BUILDDIR)/Info.plist; \
 	echo "Generated $(VERSION_GEN) + $(BUILDDIR)/Info.plist ($$display, $$exe)"
 

@@ -1,7 +1,6 @@
 #include "LSPLutGeneratorProcessor.h"
 #include "LSPLutGeneratorPattern.h"
 #include "LSPLutGeneratorConstants.h"
-#include <algorithm>
 
 LSPLutGeneratorProcessor::LSPLutGeneratorProcessor(OFX::ImageEffect& p_Effect)
     : OFX::ImageProcessor(p_Effect)
@@ -31,7 +30,7 @@ void LSPLutGeneratorProcessor::multiThreadProcessImages(OfxRectI p_Window) {
     if (!_dstImg)
         return;
     if (_operationMode == kOperationModeGenerate) {
-        const int n = std::max(2, _generateLutN);
+        const int n = _generateLutN < 2 ? 2 : _generateLutN;
         for (int y = p_Window.y1; y < p_Window.y2; ++y) {
             for (int x = p_Window.x1; x < p_Window.x2; ++x) {
                 float rgba[4];
