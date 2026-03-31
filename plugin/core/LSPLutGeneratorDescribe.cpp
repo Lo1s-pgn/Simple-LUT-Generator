@@ -62,6 +62,10 @@ void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::Cont
     helpBtn->setLabels("Help", "Help", "Help");
     helpBtn->setHint("Open the project repository on GitHub.");
     helpBtn->setParent(*supportG);
+    OFX::PushButtonParamDescriptor* reportBugBtn = p_Desc.definePushButtonParam("lutGenReportBug");
+    reportBugBtn->setLabels("Report a bug", "Report a bug", "Report a bug");
+    reportBugBtn->setHint("Open GitHub Issues to file a bug report.");
+    reportBugBtn->setParent(*supportG);
     OFX::PushButtonParamDescriptor* openLogBtn = p_Desc.definePushButtonParam("lutGenOpenLog");
     openLogBtn->setLabels("Open Log", "Open Log", "Open Log");
     openLogBtn->setHint("Open LutGenerator.log (~/Library/Application Support/LSP/).");

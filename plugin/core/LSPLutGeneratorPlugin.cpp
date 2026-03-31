@@ -90,6 +90,15 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
 #endif
         return;
     }
+    if (p_ParamName == "lutGenReportBug") {
+#ifdef __APPLE__
+        const char* kIssuesUrl = "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX/issues";
+        std::string cmd = std::string("open \"") + kIssuesUrl + "\"";
+        if (std::system(cmd.c_str()) != 0)
+            LSP_LUTGEN_LOG_ERROR("open_report_bug_url_failed");
+#endif
+        return;
+    }
     if (p_ParamName == "lutGenOpenLog") {
 #ifdef __APPLE__
         std::string path = LSPLutGeneratorLog::getLogPath();
