@@ -1,6 +1,6 @@
 # LSP LUT Generator (OFX)
 
-**LSP LUT Generator** is an **OFX** plug-in for **DaVinci Resolve**. Use one instance to fill the frame with a **3D LUT table** and another after your grade to analyze the graded image and export a matching **`.cube`** LUT.
+**LUT Generator** is an OFX plug-in for DaVinci Resolve. Use one instance to fill the frame with a 3D LUT table and another after your grade to analyze the graded image and export a matching **`.cube`** LUT.
 
 ## What it does
 
@@ -41,10 +41,6 @@ This copies the bundle to **`/Library/OFX/Plugins`**, then runs **`make purge`**
 sudo make install SKIP_RESOLVE_OFX_CACHE_PURGE=1
 ```
 
-**Tip:** Quit DaVinci Resolve before installing when possible, then restart the app.
-
-**Purge cache only** (same paths as install): **`make purge`**.
-
 ### Option B — Manual copy (e.g. from a release ZIP)
 
 1. Download the build from the latest release and copy into:
@@ -58,9 +54,9 @@ sudo make install SKIP_RESOLVE_OFX_CACHE_PURGE=1
 /Library/OFX/Plugins/
 ```
 
-## macOS Gatekeeper (unsigned / not notarized builds)
+## Remove macOS Gatekeeper warning
 
-Prebuilt bundles may be blocked by Gatekeeper.
+Unsigned bundles will be blocked by Gatekeeper :
 
 ### Method 1 — Terminal (recommended)
 
