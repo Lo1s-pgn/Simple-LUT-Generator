@@ -19,6 +19,8 @@ void copyRGBAWindow(OFX::Image* p_Src, OFX::Image* p_Dst, const OfxRectI& p_Wind
         for (int x = p_Window.x1; x < p_Window.x2; ++x) {
             float* d = static_cast<float*>(p_Dst->getPixelAddress(x, y));
             const float* s = static_cast<const float*>(p_Src->getPixelAddress(x, y));
+            if (!d || !s)
+                continue;
             d[0] = s[0];
             d[1] = s[1];
             d[2] = s[2];
@@ -38,6 +40,8 @@ void LSPLutGeneratorProcessor::multiThreadProcessImages(OfxRectI p_Window) {
                 float rgba[4];
                 lspLutGenPatternRGBA(x, y, _dstFullBounds, n, rgba);
                 float* d = static_cast<float*>(_dstImg->getPixelAddress(x, y));
+                if (!d)
+                    continue;
                 d[0] = rgba[0];
                 d[1] = rgba[1];
                 d[2] = rgba[2];

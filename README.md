@@ -81,3 +81,11 @@ Then relaunch DaVinci Resolve.
 2. Open Resolve; if macOS warns, dismiss with **Done**.
 3. Open **System Settings** → **Privacy & Security** and use **Allow Anyway** for the blocked plug-in if shown.
 4. In Resolve: **Preferences** → **Video Plugins** — enable the plug-in, save, quit, and relaunch; confirm **Open Anyway** if prompted.
+
+## Repository
+
+Source and issues: [github.com/Lo1s-pgn/LSP_LUT-Generator-OFX](https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX).
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE).

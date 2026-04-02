@@ -17,4 +17,8 @@
 #define kOperationModeGenerate 0
 #define kOperationModeAnalyze 1
 
+/* Help / bug-report buttons (must match public repo). */
+#define kLutGenRepoUrl "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX"
+#define kLutGenIssuesUrl "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX/issues"
+
 #endif

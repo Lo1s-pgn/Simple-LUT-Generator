@@ -83,8 +83,7 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     (void)p_Args;
     if (p_ParamName == "lutGenHelp") {
 #ifdef __APPLE__
-        const char* kRepoUrl = "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX";
-        std::string cmd = std::string("open \"") + kRepoUrl + "\"";
+        std::string cmd = std::string("open \"") + kLutGenRepoUrl + "\"";
         if (std::system(cmd.c_str()) != 0)
             LSP_LUTGEN_LOG_ERROR("open_help_url_failed");
 #endif
@@ -92,8 +91,7 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     }
     if (p_ParamName == "lutGenReportBug") {
 #ifdef __APPLE__
-        const char* kIssuesUrl = "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX/issues";
-        std::string cmd = std::string("open \"") + kIssuesUrl + "\"";
+        std::string cmd = std::string("open \"") + kLutGenIssuesUrl + "\"";
         if (std::system(cmd.c_str()) != 0)
             LSP_LUTGEN_LOG_ERROR("open_report_bug_url_failed");
 #endif

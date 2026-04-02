@@ -94,6 +94,8 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
             ib = std::clamp(ib, 0, p_N - 1);
             const size_t idx = (size_t)ir + (size_t)p_N * ((size_t)ig + (size_t)p_N * (size_t)ib);
             const float* gpx = static_cast<const float*>(p_GradedStrip->getPixelAddress(x, y));
+            if (!gpx)
+                continue;
             AccumCell& a = acc[idx];
             a.r += static_cast<double>(gpx[0]);
             a.g += static_cast<double>(gpx[1]);
