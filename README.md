@@ -41,7 +41,7 @@ This copies the bundle to **`/Library/OFX/Plugins`**, then runs **`make purge`**
 sudo make install SKIP_RESOLVE_OFX_CACHE_PURGE=1
 ```
 
-### Option B — Manual copy (e.g. from a release ZIP)
+### Option B — Manual copy
 
 1. Download the build from the latest release and copy into:
    - **`/Library/OFX/Plugins/`** (all users), or  
