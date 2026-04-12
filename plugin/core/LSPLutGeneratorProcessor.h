@@ -14,6 +14,7 @@ public:
     void setGenerateLutN(int p_N) { _generateLutN = p_N; }
 
     void multiThreadProcessImages(OfxRectI p_Window) override;
+    void processImagesMetal() override;
 
 private:
     OFX::Image* _srcImg;

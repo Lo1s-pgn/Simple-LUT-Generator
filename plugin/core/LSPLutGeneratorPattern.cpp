@@ -71,6 +71,14 @@ bool lspLutGenFeasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPe
     return feasibleNImpl(p_N, p_FrameW, p_FrameH, p_MinPixelsPerUnit);
 }
 
+void lspLutGenPatternGridTxTy(int p_N, int p_FrameW, int p_FrameH, int* p_OutTx, int* p_OutTy) {
+    if (p_OutTx)
+        *p_OutTx = 0;
+    if (p_OutTy)
+        *p_OutTy = 0;
+    gridDimensions(p_N, p_FrameW, p_FrameH, p_OutTx, p_OutTy);
+}
+
 int lspLutGenMaxFeasibleN(int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit) {
     static const int kOrder[] = { 128, 64, 32, 17 };
     for (int n : kOrder) {

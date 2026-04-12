@@ -5,7 +5,7 @@ plugin/version_gen.h
 *.ofx
 *.bundle/
 
-# Local release outputs (bundles + zips)
+# Local release outputs (bundles + zips) — not on the GitHub repo; upload manually to GitHub Releases
 release/
 
 # Optional local copy of the release script (committed template is make_release.sh.example)

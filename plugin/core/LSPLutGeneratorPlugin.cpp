@@ -20,6 +20,7 @@ public:
     explicit LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle);
 
     void render(const OFX::RenderArguments& p_Args) override;
+    void beginSequenceRender(const OFX::BeginSequenceRenderArguments& p_Args) override;
     void beginEdit() override;
     void changedParam(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ParamName) override;
     void endChanged(OFX::InstanceChangeReason p_Reason) override;
@@ -32,6 +33,8 @@ private:
     OFX::ChoiceParam* m_OperationMode;
     OFX::ChoiceParam* m_LutExportSize;
     OFX::PushButtonParam* m_ExportLut;
+    /** True when OFX Metal render is active (kOfxImagePropData is id<MTLBuffer>, not a CPU pointer). */
+    bool m_InstanceMetalPixelData{false};
 };
 
 LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
@@ -165,7 +168,7 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     const int nSolve = (nCap >= 2) ? nCap : 2;
 
     std::vector<float> cubeFull;
-    if (!lspLutGenBuildAnalyzedCube(src.get(), nSolve, cubeFull))
+    if (!lspLutGenBuildAnalyzedCube(src.get(), nSolve, cubeFull, m_InstanceMetalPixelData))
         return;
 
     const float* cubeWrite = cubeFull.data();
@@ -206,7 +209,13 @@ void LSPLutGeneratorPlugin::endChanged(OFX::InstanceChangeReason p_Reason) {
     OFX::ImageEffect::endChanged(p_Reason);
 }
 
+void LSPLutGeneratorPlugin::beginSequenceRender(const OFX::BeginSequenceRenderArguments& p_Args) {
+    m_InstanceMetalPixelData = p_Args.isEnabledMetalRender;
+    OFX::ImageEffect::beginSequenceRender(p_Args);
+}
+
 void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
+    m_InstanceMetalPixelData = p_Args.isEnabledMetalRender;
     // Generate: fill with pattern at max feasible N. Analyze: copy source → output.
     std::unique_ptr<OFX::Image> dst(m_DstClip->fetchImage(p_Args.time));
     std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(p_Args.time));
@@ -241,6 +250,7 @@ void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
     proc.setDstFullBounds(db);
     proc.setGenerateLutN(nUse);
     proc.setRenderWindow(p_Args.renderWindow);
+    proc.setGPURenderArgs(p_Args);
     proc.process();
 }
 
@@ -261,7 +271,7 @@ void LSPLutGeneratorPluginFactory::describe(OFX::ImageEffectDescriptor& p_Desc) 
     p_Desc.setTemporalClipAccess(false);
     p_Desc.setRenderTwiceAlways(false);
     p_Desc.setSupportsMultipleClipPARs(kSupportsMultipleClipPARs);
-    p_Desc.setSupportsMetalRender(false);
+    p_Desc.setSupportsMetalRender(true);
 }
 
 void LSPLutGeneratorPluginFactory::describeInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::ContextEnum p_Context) {

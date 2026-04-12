@@ -4,7 +4,12 @@
 #include "ofxsImageEffect.h"
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <fstream>
+
+#if defined(__APPLE__)
+#include "LSPLutGeneratorMetalCube.h"
+#endif
 
 namespace {
 struct AccumCell {
@@ -61,7 +66,67 @@ void sampleCubeRgbTriLinear(const float* p_Cube, int p_N, double p_Fr, double p_
 } // namespace
 
 // Bin pixels by pattern ref at p_N; average source RGB per cell (empty → identity ramp).
-bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba) {
+// baseRow00 points to float at (B.x1, B.y1); rowBytes as OFX (may be negative for CPU images).
+bool lspLutGenBuildAnalyzedCubeFromLinearBase(const OfxRectI& B, int p_N, const float* baseRow00, int rowBytes, std::vector<float>& p_OutRgba) {
+    if (!baseRow00 || p_N < 2)
+        return false;
+    if (B.x2 <= B.x1 || B.y2 <= B.y1)
+        return false;
+
+    const size_t n3 = (size_t)p_N * (size_t)p_N * (size_t)p_N;
+    std::vector<AccumCell> acc(n3);
+
+    const int nm1 = p_N - 1;
+    for (int y = B.y1; y < B.y2; ++y) {
+        for (int x = B.x1; x < B.x2; ++x) {
+            float ref[4];
+            lspLutGenPatternRGBA(x, y, B, p_N, ref);
+            const float sr = std::clamp(ref[0], 0.0f, 1.0f);
+            const float sg = std::clamp(ref[1], 0.0f, 1.0f);
+            const float sb = std::clamp(ref[2], 0.0f, 1.0f);
+            int ir = static_cast<int>(std::lround(static_cast<double>(sr) * static_cast<double>(nm1)));
+            int ig = static_cast<int>(std::lround(static_cast<double>(sg) * static_cast<double>(nm1)));
+            int ib = static_cast<int>(std::lround(static_cast<double>(sb) * static_cast<double>(nm1)));
+            ir = std::clamp(ir, 0, p_N - 1);
+            ig = std::clamp(ig, 0, p_N - 1);
+            ib = std::clamp(ib, 0, p_N - 1);
+            const size_t idx = (size_t)ir + (size_t)p_N * ((size_t)ig + (size_t)p_N * (size_t)ib);
+            const ptrdiff_t off = (ptrdiff_t)(y - B.y1) * (ptrdiff_t)rowBytes + (ptrdiff_t)(x - B.x1) * 16;
+            const float* gpx = reinterpret_cast<const float*>(reinterpret_cast<const char*>(baseRow00) + off);
+            AccumCell& a = acc[idx];
+            a.r += static_cast<double>(gpx[0]);
+            a.g += static_cast<double>(gpx[1]);
+            a.b += static_cast<double>(gpx[2]);
+            a.count += 1;
+        }
+    }
+
+    p_OutRgba.resize(n3 * 4u);
+    const float inv = 1.0f / static_cast<float>(nm1);
+    for (size_t ib = 0; ib < (size_t)p_N; ++ib) {
+        for (size_t ig = 0; ig < (size_t)p_N; ++ig) {
+            for (size_t ir = 0; ir < (size_t)p_N; ++ir) {
+                const size_t idxCell = ir + (size_t)p_N * (ig + (size_t)p_N * ib);
+                const size_t o = idxCell * 4u;
+                const AccumCell& a = acc[idxCell];
+                if (a.count > 0) {
+                    const double invc = 1.0 / static_cast<double>(a.count);
+                    p_OutRgba[o + 0] = static_cast<float>(a.r * invc);
+                    p_OutRgba[o + 1] = static_cast<float>(a.g * invc);
+                    p_OutRgba[o + 2] = static_cast<float>(a.b * invc);
+                } else {
+                    p_OutRgba[o + 0] = static_cast<float>(ir) * inv;
+                    p_OutRgba[o + 1] = static_cast<float>(ig) * inv;
+                    p_OutRgba[o + 2] = static_cast<float>(ib) * inv;
+                }
+                p_OutRgba[o + 3] = 1.0f;
+            }
+        }
+    }
+    return true;
+}
+
+bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba, bool p_PixelDataIsMetalBuffer) {
     if (!p_GradedStrip || p_N < 2)
         return false;
     if (p_GradedStrip->getPixelDepth() != OFX::eBitDepthFloat)
@@ -76,6 +141,39 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
         return false;
 
     const size_t n3 = (size_t)p_N * (size_t)p_N * (size_t)p_N;
+
+#if defined(__APPLE__)
+    {
+        int tx = 0;
+        int ty = 0;
+        lspLutGenPatternGridTxTy(p_N, B.x2 - B.x1, B.y2 - B.y1, &tx, &ty);
+        if (lspLutGenMetalTryBuildAnalyzedCube(p_GradedStrip->getPixelData(),
+                                               p_PixelDataIsMetalBuffer,
+                                               p_GradedStrip->getRowBytes(),
+                                               B.x1,
+                                               B.y1,
+                                               B.x2,
+                                               B.y2,
+                                               p_N,
+                                               tx,
+                                               ty,
+                                               p_OutRgba))
+            return true;
+        if (p_PixelDataIsMetalBuffer) {
+            if (lspLutGenCpuBuildAnalyzedCubeFromMetalBuffer(p_GradedStrip->getPixelData(),
+                                                             p_GradedStrip->getRowBytes(),
+                                                             B.x1,
+                                                             B.y1,
+                                                             B.x2,
+                                                             B.y2,
+                                                             p_N,
+                                                             p_OutRgba))
+                return true;
+            return false;
+        }
+    }
+#endif
+
     std::vector<AccumCell> acc(n3);
 
     const int nm1 = p_N - 1;
@@ -133,6 +231,12 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
 bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba) {
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2 || (p_NSrc % p_NDst) != 0)
         return false;
+
+#if defined(__APPLE__)
+    if (lspLutGenMetalTryDownsampleCube(p_SrcRgba, p_NSrc, p_NDst, p_OutRgba))
+        return true;
+#endif
+
     const int s = p_NSrc / p_NDst;
     const double invVol = 1.0 / static_cast<double>(s * s * s);
     const size_t nOut3 = (size_t)p_NDst * (size_t)p_NDst * (size_t)p_NDst;
@@ -171,6 +275,12 @@ bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst,
 bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba) {
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2)
         return false;
+
+#if defined(__APPLE__)
+    if (lspLutGenMetalTryResampleCubeTrilinear(p_SrcRgba, p_NSrc, p_NDst, p_OutRgba))
+        return true;
+#endif
+
     const double srcNm1 = static_cast<double>(p_NSrc - 1);
     const double dstNm1 = static_cast<double>(p_NDst - 1);
     const size_t nOut3 = (size_t)p_NDst * (size_t)p_NDst * (size_t)p_NDst;

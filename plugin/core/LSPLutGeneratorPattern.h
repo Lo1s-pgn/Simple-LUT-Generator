@@ -11,4 +11,7 @@ int lspLutGenMaxFeasibleN(int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit);
 bool lspLutGenFeasibleN(int p_N, int p_FrameW, int p_FrameH, float p_MinPixelsPerUnit);
 float lspLutGenMinPixelsPerLatticeUnit(void);
 
+/** Lattice dimensions Tx×Ty for pattern (n³ cells); must match Generate and Metal kernels. */
+void lspLutGenPatternGridTxTy(int p_N, int p_FrameW, int p_FrameH, int* p_OutTx, int* p_OutTy);
+
 #endif

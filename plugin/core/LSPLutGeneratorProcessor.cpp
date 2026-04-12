@@ -2,6 +2,7 @@
 #include "LSPLutGeneratorProcessor.h"
 #include "LSPLutGeneratorPattern.h"
 #include "LSPLutGeneratorConstants.h"
+#include "LSPLutGeneratorMetalBridge.h"
 
 LSPLutGeneratorProcessor::LSPLutGeneratorProcessor(OFX::ImageEffect& p_Effect)
     : OFX::ImageProcessor(p_Effect)
@@ -53,4 +54,74 @@ void LSPLutGeneratorProcessor::multiThreadProcessImages(OfxRectI p_Window) {
     if (!_srcImg)
         return;
     copyRGBAWindow(_srcImg, _dstImg, p_Window);
+}
+
+void LSPLutGeneratorProcessor::processImagesMetal() {
+    if (!_dstImg || !_pMetalCmdQ)
+        OFX::throwSuiteStatusException(kOfxStatFailed);
+    void* dstData = _dstImg->getPixelData();
+    if (!dstData)
+        OFX::throwSuiteStatusException(kOfxStatFailed);
+
+    const OfxRectI db = _dstImg->getBounds();
+    const OfxRectI rw = _renderWindow;
+
+    if (_operationMode == kOperationModeGenerate) {
+        const int n = _generateLutN < 2 ? 2 : _generateLutN;
+        int tx = 0;
+        int ty = 0;
+        lspLutGenPatternGridTxTy(n, db.x2 - db.x1, db.y2 - db.y1, &tx, &ty);
+        if (!lspLutGenMetalDispatch(_pMetalCmdQ,
+                                    dstData,
+                                    _dstImg->getRowBytes(),
+                                    nullptr,
+                                    0,
+                                    db.x1,
+                                    db.y1,
+                                    db.x2,
+                                    db.y2,
+                                    db.x1,
+                                    db.y1,
+                                    db.x2,
+                                    db.y2,
+                                    rw.x1,
+                                    rw.y1,
+                                    rw.x2,
+                                    rw.y2,
+                                    0,
+                                    n,
+                                    tx,
+                                    ty))
+            OFX::throwSuiteStatusException(kOfxStatFailed);
+        return;
+    }
+
+    if (!_srcImg)
+        OFX::throwSuiteStatusException(kOfxStatFailed);
+    void* srcData = _srcImg->getPixelData();
+    if (!srcData)
+        OFX::throwSuiteStatusException(kOfxStatFailed);
+    const OfxRectI sb = _srcImg->getBounds();
+    if (!lspLutGenMetalDispatch(_pMetalCmdQ,
+                                dstData,
+                                _dstImg->getRowBytes(),
+                                srcData,
+                                _srcImg->getRowBytes(),
+                                db.x1,
+                                db.y1,
+                                db.x2,
+                                db.y2,
+                                sb.x1,
+                                sb.y1,
+                                sb.x2,
+                                sb.y2,
+                                rw.x1,
+                                rw.y1,
+                                rw.x2,
+                                rw.y2,
+                                1,
+                                _generateLutN < 2 ? 2 : _generateLutN,
+                                0,
+                                0))
+        OFX::throwSuiteStatusException(kOfxStatFailed);
 }
