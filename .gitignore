@@ -11,6 +11,9 @@ release/
 # Optional local copy of the release script (committed template is make_release.sh.example)
 tools/make_release.sh
 
+# Maintainer scripts
+scripts/
+
 # Python
 __pycache__/
 *.py[cod]

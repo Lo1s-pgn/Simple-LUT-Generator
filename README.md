@@ -25,7 +25,7 @@ From the repository root:
 make
 ```
 
-This writes **`plugin/version_gen.h`**, **`build/`** intermediates, and **`release/LSP_LutGenerator_<version>.ofx.bundle`**.
+This writes **`plugin/version_gen.h`**, **`build/`** intermediates, and **`release/LSP_LutGenerator_<version>.ofx.bundle`**. The Makefile also copies **`tools/install_lsp_lut_generator_ofx.command`** into **`release/`** next to the bundle (for zipping a GitHub Release).
 
 ## Installation
 
@@ -41,7 +41,11 @@ This copies the bundle to **`/Library/OFX/Plugins`**, then runs **`make purge`**
 sudo make install SKIP_RESOLVE_OFX_CACHE_PURGE=1
 ```
 
-### Option B — Manual copy
+### Option B — macOS installer (release ZIP)
+
+Download the build from the latest **GitHub Release** and unzip the archive. You should see the **`.ofx.bundle`** and **`install_lsp_lut_generator_ofx.command`** side by side (that **`make`** layout). **Double-click** **`install_lsp_lut_generator_ofx.command`**. Terminal opens, installs to **`~/Library/OFX/Plugins/`**, clears **quarantine** on the installed bundle (use only for bundles you trust), and purges Resolve’s OFX cache the same way as **`make install`**. **Quit DaVinci Resolve** before running the script, then restart the app. If macOS blocks the script the first time, **Control-click** (or right-click) the **`.command`** file → **Open** → confirm.
+
+### Option C — Manual copy
 
 1. Download the build from the latest release and copy into:
    - **`/Library/OFX/Plugins/`** (all users), or  
@@ -63,10 +67,10 @@ Unsigned bundles will be blocked by Gatekeeper :
 Adjust the bundle name to match your installed version, then run:
 
 ```bash
-sudo chmod -R 755 /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
-sudo chown -R root:wheel /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
-sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
-sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_LutGenerator_1.0.1.ofx.bundle
+sudo chmod -R 755 /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
+sudo chown -R root:wheel /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
+sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
+sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
 ```
 
 Then relaunch DaVinci Resolve.
