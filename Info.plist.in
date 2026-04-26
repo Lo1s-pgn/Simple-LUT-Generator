@@ -6,8 +6,9 @@
     <string>en</string>
     <key>CFBundleExecutable</key>
     <string>@OFX_EXECUTABLE_NAME@</string>
+    <!-- Must match kPluginIdentifier (PLUGIN_OFX_IDENTIFIER in version_gen.h) or DaVinci Resolve / OFX can skip the bundle. -->
     <key>CFBundleIdentifier</key>
-    <string>com.LSP.LutGenerator</string>
+    <string>@PLUGIN_OFX_IDENTIFIER@</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

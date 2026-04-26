@@ -18,4 +18,7 @@ bool lspLutGenWriteCubeFile(const std::string& p_Path, int p_N, const float* p_B
 bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba);
 bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba);
 
+/* Empty if folder is missing, not a directory, or no free _NNN.cube in range. */
+std::string lspLutGenMakeUniqueNumberedCubePath(const std::string& p_Directory, const std::string& p_RawFileBase);
+
 #endif

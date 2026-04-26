@@ -1,4 +1,4 @@
-// Objective-C++: save panel for Export LUT; hop to main queue when called from OFX worker.
+// Objective-C++: folder chooser for export path; run on main queue (OFX UI rule).
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #include "LSPLutGeneratorDialogs.h"
@@ -12,30 +12,32 @@ static std::string LSPLutGenRunOnMainString(std::string (^p_Block)(void)) {
     return result;
 }
 
-static std::string LSPLutGenShowSaveLUTDialogImpl(const char* p_DefaultDir) {
+static std::string LSPLutGenShowChooseFolderDialogImpl(const char* p_DefaultDir) {
     std::string result;
     @autoreleasepool {
-        NSSavePanel* panel = [NSSavePanel savePanel];
-        [panel setTitle:@"Export analyzed LUT"];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        [panel setAllowedFileTypes:@[ @"cube" ]];
-#pragma clang diagnostic pop
+        NSOpenPanel* panel = [NSOpenPanel openPanel];
+        [panel setCanChooseFiles:NO];
+        [panel setCanChooseDirectories:YES];
+        [panel setAllowsMultipleSelection:NO];
         [panel setCanCreateDirectories:YES];
+        [panel setTitle:@"Choose export folder"];
         if (p_DefaultDir && p_DefaultDir[0] != '\0') {
             NSString* dir = [NSString stringWithUTF8String:p_DefaultDir];
             if (dir)
-                [panel setDirectoryURL:[NSURL fileURLWithPath:dir]];
+                [panel setDirectoryURL:[NSURL fileURLWithPath:dir isDirectory:YES]];
         }
         if ([panel runModal] == NSModalResponseOK) {
             NSURL* url = [panel URL];
-            if (url)
-                result = [[url path] UTF8String];
+            if (url) {
+                NSString* path = [url path];
+                if (path)
+                    result = [path UTF8String];
+            }
         }
     }
     return result;
 }
 
-std::string LSPLutGenShowSaveLUTDialog(const char* p_DefaultDir) {
-    return LSPLutGenRunOnMainString(^{ return LSPLutGenShowSaveLUTDialogImpl(p_DefaultDir); });
+std::string LSPLutGenShowChooseFolderDialog(const char* p_DefaultDir) {
+    return LSPLutGenRunOnMainString(^{ return LSPLutGenShowChooseFolderDialogImpl(p_DefaultDir); });
 }

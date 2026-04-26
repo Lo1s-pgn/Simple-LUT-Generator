@@ -7,13 +7,33 @@
 #include "LSPLutGeneratorDialogs.h"
 #include "LSPLutGeneratorLog.h"
 #include "LSPLutGeneratorPattern.h"
-#include "version_gen.h"
 #include "ofxsCore.h"
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
+
+namespace {
+/* DaVinci Resolve (and other hosts) often pass hierarchical names, e.g. "lutGenExportGroup/exportLut", in
+   kOfxActionInstanceChanged. Plain "exportLut" still appears on some hosts — accept both. */
+bool lspLutParamLeafIs(const std::string& pName, const char* pLeaf) {
+    const size_t n = std::strlen(pLeaf);
+    if (n == 0)
+        return false;
+    if (pName.size() < n)
+        return false;
+    if (pName.size() == n)
+        return pName == pLeaf;
+    if (pName.size() < n + 1u)
+        return false;
+    const char s = pName[pName.size() - n - 1u];
+    if (s != '/' && s != '.')
+        return false;
+    return pName.compare(pName.size() - n, n, pLeaf) == 0;
+}
+} // namespace
 
 class LSPLutGeneratorPlugin : public OFX::ImageEffect {
 public:
@@ -27,11 +47,15 @@ public:
 
 private:
     void updateModeDependentUi();
+    void runAnalyzeExportLut(double p_Time);
 
     OFX::Clip* m_DstClip;
     OFX::Clip* m_SrcClip;
     OFX::ChoiceParam* m_OperationMode;
     OFX::ChoiceParam* m_LutExportSize;
+    OFX::StringParam* m_ExportFolder;
+    OFX::StringParam* m_ExportFileBase;
+    OFX::PushButtonParam* m_ExportLutSetPath;
     OFX::PushButtonParam* m_ExportLut;
     /** True when OFX Metal render is active (kOfxImagePropData is id<MTLBuffer>, not a CPU pointer). */
     bool m_InstanceMetalPixelData{false};
@@ -43,11 +67,17 @@ LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
     , m_SrcClip(nullptr)
     , m_OperationMode(nullptr)
     , m_LutExportSize(nullptr)
+    , m_ExportFolder(nullptr)
+    , m_ExportFileBase(nullptr)
+    , m_ExportLutSetPath(nullptr)
     , m_ExportLut(nullptr) {
     m_DstClip = fetchClip(kOfxImageEffectOutputClipName);
     m_SrcClip = fetchClip(kOfxImageEffectSimpleSourceClipName);
     m_OperationMode = fetchChoiceParam("operationMode");
     m_LutExportSize = fetchChoiceParam("lutExportSize");
+    m_ExportFolder = fetchStringParam("lutExportFolder");
+    m_ExportFileBase = fetchStringParam("lutExportFileBase");
+    m_ExportLutSetPath = fetchPushButtonParam("exportLutSetPath");
     m_ExportLut = fetchPushButtonParam("exportLut");
 
     OFX::StringParam* creditsLabel = fetchStringParam("lutGenCreditsLabel");
@@ -78,13 +108,17 @@ void LSPLutGeneratorPlugin::updateModeDependentUi() {
     int mode = 0;
     m_OperationMode->getValue(mode);
     const bool analyze = (mode == kOperationModeAnalyze);
+    /* Do not setEnabled on the export GroupParam: some hosts (incl. Resolve) leave push buttons
+       non-interactive when both the nested group and its children are toggled. Grey-out is from leaves. */
     m_LutExportSize->setEnabled(analyze);
+    m_ExportFolder->setEnabled(analyze);
+    m_ExportFileBase->setEnabled(analyze);
+    m_ExportLutSetPath->setEnabled(analyze);
     m_ExportLut->setEnabled(analyze);
 }
 
 void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ParamName) {
-    (void)p_Args;
-    if (p_ParamName == "lutGenHelp") {
+    if (lspLutParamLeafIs(p_ParamName, "lutGenHelp")) {
 #ifdef __APPLE__
         std::string cmd = std::string("open \"") + kLutGenRepoUrl + "\"";
         if (std::system(cmd.c_str()) != 0)
@@ -92,7 +126,7 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
 #endif
         return;
     }
-    if (p_ParamName == "lutGenReportBug") {
+    if (lspLutParamLeafIs(p_ParamName, "lutGenReportBug")) {
 #ifdef __APPLE__
         std::string cmd = std::string("open \"") + kLutGenIssuesUrl + "\"";
         if (std::system(cmd.c_str()) != 0)
@@ -100,7 +134,7 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
 #endif
         return;
     }
-    if (p_ParamName == "lutGenOpenLog") {
+    if (lspLutParamLeafIs(p_ParamName, "lutGenOpenLog")) {
 #ifdef __APPLE__
         std::string path = LSPLutGeneratorLog::getLogPath();
         LSPLutGeneratorLog::ensureLogDirectoryExists(path);
@@ -111,25 +145,90 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
         return;
     }
 
-    if (p_ParamName == "operationMode")
+    if (lspLutParamLeafIs(p_ParamName, "operationMode"))
         updateModeDependentUi();
 
-    if (p_ParamName != "exportLut")
+    if (lspLutParamLeafIs(p_ParamName, "exportLutSetPath")) {
+#ifdef __APPLE__
+        std::string cur;
+        m_ExportFolder->getValue(cur);
+        const char* def = cur.empty() ? nullptr : cur.c_str();
+        const std::string pick = LSPLutGenShowChooseFolderDialog(def);
+        if (!pick.empty())
+            m_ExportFolder->setValue(pick);
+#endif
         return;
+    }
+
+    if (!lspLutParamLeafIs(p_ParamName, "exportLut"))
+        return;
+    runAnalyzeExportLut(p_Args.time);
+}
+
+void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
     // Build at nSolve (same lattice as Generate); shrink to export size if needed (box or trilinear).
-    const double t = timeLineGetTime();
     int mode = 0;
     m_OperationMode->getValue(mode);
     if (mode != kOperationModeAnalyze)
         return;
 
+    std::string exportFolder;
+    m_ExportFolder->getValue(exportFolder);
+    std::string fileBase;
+    m_ExportFileBase->getValue(fileBase);
+    if (exportFolder.empty()) {
+        const std::string msg = "Set an export folder in Export path (or use Set path file).";
+        try {
+            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportNoPath", msg);
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_no_folder_no_message_suite");
+        }
+        return;
+    }
+    const std::string outPath = lspLutGenMakeUniqueNumberedCubePath(exportFolder, fileBase);
+    if (outPath.empty()) {
+        const std::string msg = "The export path is not a valid, existing folder:\n" + exportFolder
+            + "\n\nCheck the path, or use Set path file to choose a folder.";
+        try {
+            sendMessage(OFX::Message::eMessageError, "lspLutGenExportBadFolder", msg);
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_bad_folder_no_message_suite");
+        }
+        return;
+    }
+
     std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(t));
-    if (!src.get() || !src->getPixelData())
+    if (!src.get() || !src->getPixelData()) {
+        const double tFallback = timeLineGetTime();
+        if (tFallback != t)
+            src.reset(m_SrcClip->fetchImage(tFallback));
+    }
+    if (!src.get() || !src->getPixelData()) {
+        const char* msg = "Export LUT: could not read the Source image at the current time.\n"
+            "Scrub the playhead over the clip, then try again.";
+        try {
+            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportNoSource", std::string(msg));
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_no_source_no_message_suite");
+        }
         return;
-    if (src->getPixelDepth() != OFX::eBitDepthFloat)
+    }
+    if (src->getPixelDepth() != OFX::eBitDepthFloat) {
+        try {
+            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportBitDepth", std::string("Source must be 32-bit float (RGB)."));
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_bit_depth_no_message_suite");
+        }
         return;
-    if (src->getPixelComponents() != OFX::ePixelComponentRGBA)
+    }
+    if (src->getPixelComponents() != OFX::ePixelComponentRGBA) {
+        try {
+            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportComponents", std::string("Source must be RGBA for export."));
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_components_no_message_suite");
+        }
         return;
+    }
 
     const OfxRectI sb = src->getBounds();
     const int fw = sb.x2 - sb.x1;
@@ -168,27 +267,43 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
     const int nSolve = (nCap >= 2) ? nCap : 2;
 
     std::vector<float> cubeFull;
-    if (!lspLutGenBuildAnalyzedCube(src.get(), nSolve, cubeFull, m_InstanceMetalPixelData))
+    if (!lspLutGenBuildAnalyzedCube(src.get(), nSolve, cubeFull, m_InstanceMetalPixelData)) {
+        try {
+            sendMessage(OFX::Message::eMessageError, "lspLutGenBuildCubeFailed", std::string("Could not build the analyzed 3D LUT from the frame."));
+        } catch (const OFX::Exception::Suite&) {
+            LSP_LUTGEN_LOG_ERROR("export_build_cube_no_message_suite");
+        }
+        LSP_LUTGEN_LOG_ERROR("export_build_cube_failed");
         return;
+    }
 
     const float* cubeWrite = cubeFull.data();
     std::vector<float> cubeExport;
     if (nExport != nSolve) {
         if ((nSolve % nExport) == 0) {
-            if (!lspLutGenDownsampleCubeRgba(cubeFull.data(), nSolve, nExport, cubeExport))
+            if (!lspLutGenDownsampleCubeRgba(cubeFull.data(), nSolve, nExport, cubeExport)) {
+                try {
+                    sendMessage(OFX::Message::eMessageError, "lspLutGenDownsampleFailed", std::string("Could not resize the analyzed LUT to the chosen export size."));
+                } catch (const OFX::Exception::Suite&) {
+                    LSP_LUTGEN_LOG_ERROR("export_downsample_no_message_suite");
+                }
                 return;
+            }
         } else {
-            if (!lspLutGenResampleCubeRgbaTrilinear(cubeFull.data(), nSolve, nExport, cubeExport))
+            if (!lspLutGenResampleCubeRgbaTrilinear(cubeFull.data(), nSolve, nExport, cubeExport)) {
+                try {
+                    sendMessage(OFX::Message::eMessageError, "lspLutGenResampleFailed", std::string("Could not resample the analyzed LUT to the chosen export size."));
+                } catch (const OFX::Exception::Suite&) {
+                    LSP_LUTGEN_LOG_ERROR("export_resample_no_message_suite");
+                }
                 return;
+            }
         }
         cubeWrite = cubeExport.data();
     }
 
-    const std::string path = LSPLutGenShowSaveLUTDialog(nullptr);
-    if (path.empty())
-        return;
-    if (!lspLutGenWriteCubeFile(path, nExport, cubeWrite)) {
-        const std::string detail = std::string("Could not save the LUT file:\n") + path
+    if (!lspLutGenWriteCubeFile(outPath, nExport, cubeWrite)) {
+        const std::string detail = std::string("Could not save the LUT file:\n") + outPath
             + "\n\nCheck folder permissions, disk space, and that the path is writable.";
         try {
             sendMessage(OFX::Message::eMessageError, "lspLutGenWriteCubeFailed", detail);
@@ -259,6 +374,7 @@ LSPLutGeneratorPluginFactory::LSPLutGeneratorPluginFactory()
 
 void LSPLutGeneratorPluginFactory::describe(OFX::ImageEffectDescriptor& p_Desc) {
     p_Desc.setLabels(kPluginName, kPluginName, kPluginName);
+    p_Desc.setVersion(PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR, PLUGIN_VERSION_PATCH, 0, std::string(PLUGIN_VERSION_STR));
     p_Desc.setPluginGrouping(kPluginGrouping);
     p_Desc.setPluginDescription(kPluginDescription);
     p_Desc.addSupportedContext(OFX::eContextFilter);

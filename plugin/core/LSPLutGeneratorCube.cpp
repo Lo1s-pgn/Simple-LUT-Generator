@@ -3,8 +3,11 @@
 #include "LSPLutGeneratorPattern.h"
 #include "ofxsImageEffect.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
+#include <filesystem>
 #include <fstream>
 
 #if defined(__APPLE__)
@@ -169,7 +172,7 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
                                                              p_N,
                                                              p_OutRgba))
                 return true;
-            return false;
+            /* Last render was Metal, but this image can be a CPU map in instance-changed. Fall through. */
         }
     }
 #endif
@@ -305,6 +308,63 @@ bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int 
         }
     }
     return true;
+}
+
+static std::string lspLutGenTrimCopyForExportPath(const std::string& s) {
+    size_t a = 0, b = s.size();
+    while (a < b && (s[a] == ' ' || s[a] == '\t' || s[a] == '\n' || s[a] == '\r'))
+        ++a;
+    while (b > a && (s[b - 1] == ' ' || s[b - 1] == '\t' || s[b - 1] == '\n' || s[b - 1] == '\r'))
+        --b;
+    return s.substr(a, b - a);
+}
+
+static std::string lspLutGenSanitizeExportBaseName(const std::string& p_Raw) {
+    std::string t = lspLutGenTrimCopyForExportPath(p_Raw);
+    if (t.size() >= 5) {
+        bool endsCube = true;
+        const char* suf = ".cube";
+        for (size_t i = 0; i < 5; ++i) {
+            if (std::tolower((unsigned char)t[t.size() - 5 + i]) != (unsigned char)suf[i]) {
+                endsCube = false;
+                break;
+            }
+        }
+        if (endsCube)
+            t = t.substr(0, t.size() - 5);
+    }
+    for (char& c : t) {
+        if (c == '/' || c == '\\')
+            c = '_';
+    }
+    t = lspLutGenTrimCopyForExportPath(t);
+    if (t.empty())
+        t = "LUT";
+    return t;
+}
+
+std::string lspLutGenMakeUniqueNumberedCubePath(const std::string& p_Directory, const std::string& p_RawFileBase) {
+    namespace fs = std::filesystem;
+    const std::string dirTrim = lspLutGenTrimCopyForExportPath(p_Directory);
+    if (dirTrim.empty())
+        return "";
+    const std::string stem = lspLutGenSanitizeExportBaseName(p_RawFileBase);
+    try {
+        const fs::path dir = fs::path(dirTrim);
+        std::error_code ec;
+        if (!fs::exists(dir, ec) || !fs::is_directory(dir, ec))
+            return "";
+        for (int n = 1; n < 100000; ++n) {
+            char sfx[32];
+            std::snprintf(sfx, sizeof(sfx), "_%03d", n);
+            const fs::path out = dir / (stem + std::string(sfx) + ".cube");
+            if (!fs::exists(out, ec))
+                return out.string();
+        }
+    } catch (...) {
+        return "";
+    }
+    return "";
 }
 
 // Iridas .cube text: DOMAIN 0–1, LUT_3D_SIZE, then r-major RGB rows.

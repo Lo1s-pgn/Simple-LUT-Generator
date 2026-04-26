@@ -6,16 +6,16 @@
 
 - **Generate LUT Table** — Draws the largest feasible n×n×n LUT table for the current resolution.
 - **Analyze & export LUT** — Uses **Source** (graded table), solves at max size, then optionally box-downsamples to **Export LUT size** when that size divides the max.
-- **Export LUT** — Writes a **`.cube`** file.
-- **Rendering:** **CPU** only for now.
+- **Export LUT** — Writes a **`.cube`** to a chosen folder; base **LUT name** with automatic **`_001`**, **`_002`**, … suffixes if files already exist.
+- **Rendering:** **CPU** by default; **Metal** when the host enables **OFX Metal** render.
 
 ![Example node tree setup for LSP - Simple LUT Generator](./doc/node-tree.png)
 
-**In Resolve:** **Effects** → **OpenFX** → **LSP - Color** → **LSP - Simple LUT Generator** (version suffix may appear in the node name).
+**In Resolve:** **Effects** → **OpenFX** → **LSP** → **Color** → look for **LSP - Simple LUT Generator** with the build version in the name (e.g. **1.0.5**). Use the search box and type `LSP` or `LUT` if you do not see the folders.
 
 ## GitHub repository
 
-The repository is named **Simple LUT Generator** (URL slug **`Simple-LUT-Generator`**). If you **rename the repo** on GitHub, GitHub keeps a redirect from the old URL. After renaming, run **`git remote set-url origin https://github.com/Lo1s-pgn/Simple-LUT-Generator.git`** (or SSH) in any clone so new pushes go to the canonical URL.
+**Display name (GitHub):** *Simple LUT Generator* — **URL slug** **`Simple-LUT-Generator`**. The clone may still use the former repo name until you rename the repository under **Settings → General**; GitHub then redirects the old URL. **Only set `git remote` to the new `…/Simple-LUT-Generator.git` URL after that repo exists** (otherwise `git fetch` fails). Example: **`git remote set-url origin https://github.com/Lo1s-pgn/Simple-LUT-Generator.git`**. (Use SSH if that is what you use for GitHub.)
 
 ## Platform
 
@@ -29,7 +29,11 @@ From the repository root:
 make
 ```
 
-This writes **`plugin/version_gen.h`**, **`build/`** intermediates, and **`release/LSP_LutGenerator_<version>.ofx.bundle`**. The Makefile also copies **`tools/install_lsp_lut_generator_ofx.command`** into **`release/`** next to the bundle (for zipping a GitHub Release).
+This writes **`plugin/version_gen.h`**, **`build/`** intermediates, and **`release/LSP_Simple_LUT_Generator_<version>.ofx.bundle`**. The Makefile also copies **`install_lsp_lut_generator_ofx.command`** and **`purge_resolve_ofx_cache.command`** into **`release/`** next to the bundle (for zipping a GitHub Release).
+
+**Version bump + snapshot:** from the repo root, **`make archive`** or **`./scripts/archive_version.sh`** (or **`./scripts/archive-version.sh`**) archives the current **`VERSION`** to **`../archive/Simple-LUT-Generator-OFX/v<VERSION>/`**, bumps the patch in **`VERSION`**, prepends **`CHANGELOG`**, then runs **`make clean && make`**. Line **1** of **`CHANGELOG`** must match line **1** of **`VERSION`** (numeric triplet) before you run it.
+
+**If the plug-in loads but does not appear in the list:** run **`make purge`** (or double-click **`purge_resolve_ofx_cache.command`** from the release folder), quit Resolve completely, then reopen. Remove any older **`LSP_LutGenerator_*.ofx.bundle`** from **`~/Library/OFX/Plugins`** so only one copy of the effect exists. On the **Color** page, open the **Effects** → **OpenFX** library (not only the Edit page effects list).
 
 ## Installation
 
@@ -71,10 +75,10 @@ Unsigned bundles will be blocked by Gatekeeper :
 Adjust the bundle name to match your installed version, then run:
 
 ```bash
-sudo chmod -R 755 /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
-sudo chown -R root:wheel /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
-sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
-sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_LutGenerator_1.0.2.ofx.bundle
+sudo chmod -R 755 /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
+sudo chown -R root:wheel /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
+sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
+sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
 ```
 
 Then relaunch DaVinci Resolve.

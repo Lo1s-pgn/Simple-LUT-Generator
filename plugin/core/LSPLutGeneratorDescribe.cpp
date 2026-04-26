@@ -37,19 +37,43 @@ void describeLutGeneratorInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::Cont
     mode->setAnimates(false);
     mode->setParent(*mainG);
 
+    OFX::GroupParamDescriptor* exportG = addGroup(p_Desc, "lutGenExportGroup", "Export", "Analyzed .cube: export size, LUT name, save folder, and export.", true);
+    exportG->setParent(*mainG);
+
     OFX::ChoiceParamDescriptor* lutSize = p_Desc.defineChoiceParam("lutExportSize");
-    lutSize->setLabels("Export LUT size", "Export LUT size", "Analyze mode only: edge length of the exported .cube (17, 32, 64, or 128).");
+    lutSize->setLabels("Export LUT size", "Export LUT size", "Edge length of the exported .cube in Analyze & export mode (17, 32, 64, or 128).");
     lutSize->appendOption("17 × 17 × 17");
     lutSize->appendOption("32 × 32 × 32");
     lutSize->appendOption("64 × 64 × 64");
     lutSize->appendOption("128 × 128 × 128");
     lutSize->setDefault(1);
     lutSize->setAnimates(false);
-    lutSize->setParent(*mainG);
+    lutSize->setParent(*exportG);
+
+    OFX::StringParamDescriptor* exportName = p_Desc.defineStringParam("lutExportFileBase");
+    exportName->setLabels("LUT name", "LUT name", "LUT name");
+    exportName->setHint("Base name (no extension). The plug-in saves as <name>_001.cube, _002.cube, and so on, skipping numbers that already exist in the folder.");
+    exportName->setStringType(OFX::eStringTypeSingleLine);
+    exportName->setDefault("LUT");
+    exportName->setAnimates(false);
+    exportName->setParent(*exportG);
+
+    OFX::StringParamDescriptor* exportFolder = p_Desc.defineStringParam("lutExportFolder");
+    exportFolder->setLabels("Export path", "Export path", "Export path");
+    exportFolder->setHint("Folder to receive .cube files. Type a path, or use Set path file to pick a folder.");
+    exportFolder->setStringType(OFX::eStringTypeDirectoryPath);
+    exportFolder->setDefault("");
+    exportFolder->setAnimates(false);
+    exportFolder->setParent(*exportG);
+
+    OFX::PushButtonParamDescriptor* setPathBtn = p_Desc.definePushButtonParam("exportLutSetPath");
+    setPathBtn->setLabels("Set path file", "Set path file", "Set path file");
+    setPathBtn->setHint("Open a folder picker. The selected folder is written to Export path.");
+    setPathBtn->setParent(*exportG);
 
     OFX::PushButtonParamDescriptor* exportPb = p_Desc.definePushButtonParam("exportLut");
-    exportPb->setLabels("Export LUT", "Export LUT", "Analyze mode: save the analyzed LUT as a .cube file.");
-    exportPb->setParent(*mainG);
+    exportPb->setLabels("Export LUT", "Export LUT", "Analyze mode: save the analyzed LUT to Export path with automatic numbering (_001, _002, ...).");
+    exportPb->setParent(*exportG);
 
     OFX::GroupParamDescriptor* supportG = addGroup(p_Desc, "lutGenSupportGroup", "SUPPORT", "Info and log.", false);
     OFX::StringParamDescriptor* creditsParam = p_Desc.defineStringParam("lutGenCreditsLabel");

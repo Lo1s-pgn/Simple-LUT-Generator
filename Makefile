@@ -12,7 +12,8 @@ VERSION_MAJ := $(shell echo "$(VERSION_TRIPLET)" | cut -d. -f1)
 VERSION_MIN := $(shell echo "$(VERSION_TRIPLET)" | cut -d. -f2)
 VERSION_PATCH := $(shell echo "$(VERSION_TRIPLET)" | cut -d. -f3)
 PLUGIN_DISPLAY := $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_PATCH)
-OFX_BUNDLE_STEM := LSP_LutGenerator_$(PLUGIN_DISPLAY)
+# On-disk: matches product name (underscores, no spaces). User-visible name is CFBundleName in Info.plist.
+OFX_BUNDLE_STEM := LSP_Simple_LUT_Generator_$(PLUGIN_DISPLAY)
 OFX_BUNDLE := $(DISTDIR)/$(OFX_BUNDLE_STEM).ofx.bundle
 OFX_BINARY := $(BUILDDIR)/$(OFX_BUNDLE_STEM).ofx
 BUNDLE_DIR = $(OFX_BUNDLE)/Contents/MacOS/
@@ -37,6 +38,7 @@ all: $(OFX_BUNDLE) resources
 resources: $(OFX_BUNDLE)
 	@if [ -f ICON.png ]; then cp ICON.png $(RESOURCES_DIR)/$(PLUGIN_ICON_NAME); echo "Icon: $(RESOURCES_DIR)/$(PLUGIN_ICON_NAME)"; else echo "No ICON.png — effect icon skipped."; fi
 	@cp tools/install_lsp_lut_generator_ofx.command $(DISTDIR)/ && chmod +x $(DISTDIR)/install_lsp_lut_generator_ofx.command && echo "Installer: $(DISTDIR)/install_lsp_lut_generator_ofx.command"
+	@cp tools/purge_resolve_ofx_cache.command $(DISTDIR)/ && chmod +x $(DISTDIR)/purge_resolve_ofx_cache.command && echo "Purge cache: $(DISTDIR)/purge_resolve_ofx_cache.command"
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
@@ -83,11 +85,12 @@ $(VERSION_GEN) $(BUILDDIR)/Info.plist: Info.plist.in $(VERSION_FILE) | $(BUILDDI
 	  echo "#define PLUGIN_OFX_IDENTIFIER \"$$ofxid\""; \
 	  echo "#endif"; \
 	} > $(VERSION_GEN); \
-	stem="LSP_LutGenerator_$$numeric"; \
+	stem="LSP_Simple_LUT_Generator_$$numeric"; \
 	exe="$$stem.ofx"; \
 	sed -e "s|@PLUGIN_NUMERIC_VERSION@|$$numeric|g" \
 	    -e "s|@PLUGIN_DISPLAY_VERSION@|$$display|g" \
-	    -e "s|@OFX_EXECUTABLE_NAME@|$$exe|g" Info.plist.in > $(BUILDDIR)/Info.plist; \
+	    -e "s|@OFX_EXECUTABLE_NAME@|$$exe|g" \
+	    -e "s|@PLUGIN_OFX_IDENTIFIER@|$$ofxid|g" Info.plist.in > $(BUILDDIR)/Info.plist; \
 	echo "Generated $(VERSION_GEN) + $(BUILDDIR)/Info.plist ($$display, $$exe)"
 
 $(BUILDDIR)/LSPLutGeneratorPlugin.o: plugin/core/LSPLutGeneratorPlugin.cpp $(VERSION_GEN) plugin/core/LSPLutGeneratorPlugin.h plugin/core/LSPLutGeneratorDescribe.h plugin/core/LSPLutGeneratorProcessor.h plugin/core/LSPLutGeneratorConstants.h plugin/core/LSPLutGeneratorCube.h plugin/core/LSPLutGeneratorLog.h plugin/macos/LSPLutGeneratorDialogs.h plugin/core/LSPLutGeneratorPattern.h | $(BUILDDIR)
@@ -139,7 +142,7 @@ clean:
 	rm -rf $(BUILDDIR)
 	@if [ -d "$(DISTDIR)" ]; then \
 	  chmod -R u+w "$(DISTDIR)" 2>/dev/null || true; \
-	  rm -rf "$(DISTDIR)"/LSP_LutGenerator_*.ofx.bundle 2>/dev/null || true; \
+	  rm -rf "$(DISTDIR)"/LSP_Simple_LUT_Generator_*.ofx.bundle "$(DISTDIR)"/LSP_LutGenerator_*.ofx.bundle 2>/dev/null || true; \
 	  rm -f "$(DISTDIR)"/*.zip 2>/dev/null || true; \
 	fi
 
@@ -174,4 +177,7 @@ purge:
 	@echo "  $(RESOLVE_OFX_CACHE_V2)"
 	@echo "  $(RESOLVE_OFX_CACHE_V1)"
 
-.PHONY: all clean install resources purge_resolve_ofx_cache purge
+archive:
+	@./scripts/archive_version.sh
+
+.PHONY: all clean install resources purge_resolve_ofx_cache purge archive
