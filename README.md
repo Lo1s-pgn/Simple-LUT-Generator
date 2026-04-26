@@ -31,10 +31,6 @@ make
 
 This writes **`plugin/version_gen.h`**, **`build/`** intermediates, and **`release/LSP_Simple_LUT_Generator_<version>.ofx.bundle`**. The Makefile also copies **`install_lsp_lut_generator_ofx.command`** and **`purge_resolve_ofx_cache.command`** into **`release/`** next to the bundle (for zipping a GitHub Release).
 
-**Version bump + snapshot:** from the repo root, **`make archive`** or **`./scripts/archive_version.sh`** (or **`./scripts/archive-version.sh`**) archives the current **`VERSION`** to **`../archive/Simple-LUT-Generator-OFX/v<VERSION>/`**, bumps the patch in **`VERSION`**, prepends **`CHANGELOG`**, then runs **`make clean && make`**. Line **1** of **`CHANGELOG`** must match line **1** of **`VERSION`** (numeric triplet) before you run it.
-
-**If the plug-in loads but does not appear in the list:** run **`make purge`** (or double-click **`purge_resolve_ofx_cache.command`** from the release folder), quit Resolve completely, then reopen. Remove any older **`LSP_LutGenerator_*.ofx.bundle`** from **`~/Library/OFX/Plugins`** so only one copy of the effect exists. On the **Color** page, open the **Effects** → **OpenFX** library (not only the Edit page effects list).
-
 ## Installation
 
 ### Option A — Install from your own build (macOS)
