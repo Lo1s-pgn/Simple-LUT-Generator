@@ -13,10 +13,6 @@
 
 **In Resolve:** **Effects** → **OpenFX** → **LSP** → **Color** → look for **LSP - Simple LUT Generator** with the build version in the name (e.g. **1.0.5**). Use the search box and type `LSP` or `LUT` if you do not see the folders.
 
-## GitHub repository
-
-**Display name (GitHub):** *Simple LUT Generator* — **URL slug** **`Simple-LUT-Generator`**. The clone may still use the former repo name until you rename the repository under **Settings → General**; GitHub then redirects the old URL. **Only set `git remote` to the new `…/Simple-LUT-Generator.git` URL after that repo exists** (otherwise `git fetch` fails). Example: **`git remote set-url origin https://github.com/Lo1s-pgn/Simple-LUT-Generator.git`**. (Use SSH if that is what you use for GitHub.)
-
 ## Platform
 
 - **macOS** only for now.
