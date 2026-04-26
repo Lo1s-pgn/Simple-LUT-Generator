@@ -1,4 +1,4 @@
-# LSP LUT Generator OFX — macOS (CPU + optional Metal GPU when the host enables OFX Metal render)
+# LSP - Simple LUT Generator OFX — macOS (CPU + optional Metal GPU when the host enables OFX Metal render)
 # VERSION (first line) = MAJ.MIN.PATCH [optional label] (e.g. 1.0.0 or 1.0.1 beta) → triplet for bundle/OFX id; full line for display string
 # Intermediates (.o, linked .ofx, Info.plist) → build/ ; installable .ofx.bundle → release/
 

@@ -4,9 +4,9 @@
 #include "version_gen.h"
 
 /* Identity and OFX capability flags (see Makefile-generated version_gen.h). */
-#define kPluginName "LSP LUT Generator " PLUGIN_VERSION_STR
+#define kPluginName "LSP - Simple LUT Generator " PLUGIN_VERSION_STR
 #define kPluginGrouping "LSP - Color"
-#define kPluginDescription "LSP LUT Generator — 3D LUT table and single-input LUT analysis (OFX)."
+#define kPluginDescription "LSP - Simple LUT Generator — 3D LUT table and single-input LUT analysis (OFX)."
 #define kPluginIdentifier PLUGIN_OFX_IDENTIFIER
 #define kPluginVersionMajor PLUGIN_VERSION_MAJOR
 #define kPluginVersionMinor PLUGIN_VERSION_MINOR
@@ -18,7 +18,7 @@
 #define kOperationModeAnalyze 1
 
 /* Help / bug-report buttons (must match public repo). */
-#define kLutGenRepoUrl "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX"
-#define kLutGenIssuesUrl "https://github.com/Lo1s-pgn/LSP_LUT-Generator-OFX/issues"
+#define kLutGenRepoUrl "https://github.com/Lo1s-pgn/Simple-LUT-Generator"
+#define kLutGenIssuesUrl "https://github.com/Lo1s-pgn/Simple-LUT-Generator/issues"
 
 #endif

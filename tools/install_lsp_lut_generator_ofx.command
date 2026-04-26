@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install LSP LUT Generator OFX bundle from this directory into macOS OFX plug-in folders,
+# Install LSP - Simple LUT Generator OFX bundle from this directory into macOS OFX plug-in folders,
 # clear quarantine on the installed copy, and optionally purge DaVinci Resolve OFX caches.
 #
 # Double-click this file in Finder (same folder as the .ofx.bundle), or run from Terminal:

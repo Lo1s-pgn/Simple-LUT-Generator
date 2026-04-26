@@ -315,7 +315,7 @@ bool lspLutGenWriteCubeFile(const std::string& p_Path, int p_N, const float* p_B
     if (!out)
         return false;
     const long long n = (long long)p_N * p_N * p_N;
-    out << "# LSP LUT Generator analyzed LUT " << p_N << "^3\n";
+    out << "# LSP - Simple LUT Generator analyzed LUT " << p_N << "^3\n";
     out << "DOMAIN_MIN 0.0 0.0 0.0\n";
     out << "DOMAIN_MAX 1.0 1.0 1.0\n";
     out << "LUT_3D_SIZE " << p_N << "\n";

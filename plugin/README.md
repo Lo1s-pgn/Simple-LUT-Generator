@@ -1,4 +1,4 @@
-# Plugin sources — LSP LUT Generator
+# Plugin sources — LSP - Simple LUT Generator
 
 - **`core/LSPLutGeneratorPlugin.cpp`** — **`ImageEffect`** instance: **`render`**, **`changedParam`**, factory registration.
 - **`core/LSPLutGeneratorDescribe.cpp`** — Clips and parameters (operation mode, LUT size, export button).

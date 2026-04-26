@@ -1,6 +1,6 @@
-# LSP LUT Generator (OFX)
+# LSP - Simple LUT Generator (OFX)
 
-**LUT Generator** is an OFX plug-in for DaVinci Resolve. Use one instance to fill the frame with a 3D LUT table and another after your grade to analyze the graded image and export a matching **`.cube`** LUT.
+**Simple LUT Generator** is the OFX plug-in for DaVinci Resolve. Use one instance to fill the frame with a 3D LUT table and another after your grade to analyze the graded image and export a matching **`.cube`** LUT.
 
 ## What it does
 
@@ -9,9 +9,13 @@
 - **Export LUT** — Writes a **`.cube`** file.
 - **Rendering:** **CPU** only for now.
 
-![Example node tree setup for LSP LUT Generator](./doc/node-tree.png)
+![Example node tree setup for LSP - Simple LUT Generator](./doc/node-tree.png)
 
-**In Resolve:** **Effects** → **OpenFX** → **LSP - Color** → **LSP LUT Generator**.
+**In Resolve:** **Effects** → **OpenFX** → **LSP - Color** → **LSP - Simple LUT Generator** (version suffix may appear in the node name).
+
+## GitHub repository
+
+The repository is named **Simple LUT Generator** (URL slug **`Simple-LUT-Generator`**). If you **rename the repo** on GitHub, GitHub keeps a redirect from the old URL. After renaming, run **`git remote set-url origin https://github.com/Lo1s-pgn/Simple-LUT-Generator.git`** (or SSH) in any clone so new pushes go to the canonical URL.
 
 ## Platform
 
