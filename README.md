@@ -7,7 +7,6 @@
 - **Generate LUT Table** — Draws the largest feasible n×n×n LUT table for the current resolution.
 - **Analyze & export LUT** — Uses **Source** (graded table), solves at max size, then optionally box-downsamples to **Export LUT size** when that size divides the max.
 - **Export LUT** — Writes a **`.cube`** to a chosen folder; base **LUT name** with automatic **`_001`**, **`_002`**, … suffixes if files already exist.
-- **Rendering:** **CPU** by default; **Metal** when the host enables **OFX Metal** render.
 
 ![Example node tree setup for LSP - Simple LUT Generator](./doc/node-tree.png)
 
