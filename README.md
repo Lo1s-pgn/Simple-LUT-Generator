@@ -1,6 +1,6 @@
 # LSP - Simple LUT Generator (OFX)
 
-**Simple LUT Generator** is the OFX plug-in for DaVinci Resolve. Use one instance to fill the frame with a 3D LUT table and another after your grade to analyze the graded image and export a matching `**.cube`** LUT.
+**Simple LUT Generator** is an OFX plug-in for DaVinci Resolve. Use one instance to fill the frame with a 3D LUT table and another after your grade to analyze the graded image and export a matching `**.cube`** LUT.
 
 ## What it does
 
