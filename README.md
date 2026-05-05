@@ -64,10 +64,10 @@ Unsigned bundles will be blocked by Gatekeeper :
 Adjust the bundle name to match your installed version, then run:
 
 ```bash
-sudo chmod -R 755 /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
-sudo chown -R root:wheel /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
-sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
-sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.5.ofx.bundle
+sudo chmod -R 755 /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.7.ofx.bundle
+sudo chown -R root:wheel /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.7.ofx.bundle
+sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.7.ofx.bundle
+sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.7.ofx.bundle
 ```
 
 Then relaunch DaVinci Resolve.

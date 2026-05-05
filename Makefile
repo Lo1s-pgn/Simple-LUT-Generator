@@ -1,4 +1,4 @@
-# LSP - Simple LUT Generator OFX — macOS (CPU + optional Metal GPU when the host enables OFX Metal render)
+# LSP - Simple LUT Generator OFX — macOS (CPU only)
 # VERSION (first line) = MAJ.MIN.PATCH [optional label] (e.g. 1.0.0 or 1.0.1 beta) → triplet for bundle/OFX id; full line for display string
 # Intermediates (.o, linked .ofx, Info.plist) → build/ ; installable .ofx.bundle → release/
 
@@ -22,14 +22,12 @@ RESOURCES_DIR = $(OFX_BUNDLE)/Contents/Resources
 # Vendored minimal SDK in-repo; override with OFX_SDK_PATH=/path/to/sdk if needed.
 OFX_SDK_PATH ?= openfx-sdk
 ARCH_FLAGS = -arch arm64 -arch x86_64
-CXXFLAGS = -std=c++20 -O2 -Wno-dynamic-exception-spec -fvisibility=hidden -Iplugin -Iplugin/core -Iplugin/macos -Iplugin/metal -I"$(OFX_SDK_PATH)/include" -I"$(OFX_SDK_PATH)/Support/include" -I"$(OFX_SDK_PATH)/Support/Library" $(ARCH_FLAGS)
-LDFLAGS = -bundle -fvisibility=hidden -framework Foundation -framework AppKit -framework Metal -Wl,-rpath,@loader_path $(ARCH_FLAGS)
-
-METAL_SRC := plugin/metal/LSPLutGeneratorMetal.metal
+CXXFLAGS = -std=c++20 -O2 -Wno-dynamic-exception-spec -fvisibility=hidden -Iplugin -Iplugin/core -Iplugin/macos -I"$(OFX_SDK_PATH)/include" -I"$(OFX_SDK_PATH)/Support/include" -I"$(OFX_SDK_PATH)/Support/Library" $(ARCH_FLAGS)
+LDFLAGS = -bundle -fvisibility=hidden -framework Foundation -framework AppKit -Wl,-rpath,@loader_path $(ARCH_FLAGS)
 
 PLUGIN_ICON_NAME := com.LSP.LutGenerator.$(PLUGIN_DISPLAY).png
 
-PLUGIN_OBJ = $(BUILDDIR)/LSPLutGeneratorPlugin.o $(BUILDDIR)/LSPLutGeneratorDescribe.o $(BUILDDIR)/LSPLutGeneratorProcessor.o $(BUILDDIR)/LSPLutGeneratorPattern.o $(BUILDDIR)/LSPLutGeneratorCube.o $(BUILDDIR)/LSPLutGeneratorDialogs.o $(BUILDDIR)/LSPLutGeneratorMetalLibrary.o $(BUILDDIR)/LSPLutGeneratorMetal.o $(BUILDDIR)/LSPLutGeneratorMetalCube.o
+PLUGIN_OBJ = $(BUILDDIR)/LSPLutGeneratorPlugin.o $(BUILDDIR)/LSPLutGeneratorDescribe.o $(BUILDDIR)/LSPLutGeneratorProcessor.o $(BUILDDIR)/LSPLutGeneratorPattern.o $(BUILDDIR)/LSPLutGeneratorCube.o $(BUILDDIR)/LSPLutGeneratorDialogs.o
 SUPPORT_OBJ = $(BUILDDIR)/ofxsCore.o $(BUILDDIR)/ofxsImageEffect.o $(BUILDDIR)/ofxsInteract.o $(BUILDDIR)/ofxsLog.o \
 	$(BUILDDIR)/ofxsMultiThread.o $(BUILDDIR)/ofxsParams.o $(BUILDDIR)/ofxsProperty.o $(BUILDDIR)/ofxsPropertyValidation.o
 
@@ -47,14 +45,13 @@ $(OFX_BINARY): $(PLUGIN_OBJ) $(SUPPORT_OBJ)
 	$(CXX) $^ -o $@ $(LDFLAGS)
 	strip -x $@
 
-$(OFX_BUNDLE): $(OFX_BINARY) $(BUILDDIR)/Info.plist $(VERSION_GEN) $(METAL_SRC)
+$(OFX_BUNDLE): $(OFX_BINARY) $(BUILDDIR)/Info.plist $(VERSION_GEN)
 	@mkdir -p $(DISTDIR)
 	rm -rf $(OFX_BUNDLE)
 	mkdir -p $(BUNDLE_DIR)
 	mkdir -p $(RESOURCES_DIR)
 	cp $(OFX_BINARY) $(BUNDLE_DIR)$(OFX_BUNDLE_STEM).ofx
 	cp $(BUILDDIR)/Info.plist $(OFX_BUNDLE)/Contents/Info.plist
-	cp $(METAL_SRC) $(RESOURCES_DIR)/LSPLutGeneratorMetal.metal
 	@exe=$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$(OFX_BUNDLE)/Contents/Info.plist" 2>/dev/null); \
 	if [ -z "$$exe" ]; then echo "ERROR: Could not read CFBundleExecutable from Info.plist"; exit 1; fi; \
 	if [ ! -f "$(OFX_BUNDLE)/Contents/MacOS/$$exe" ]; then \
@@ -99,25 +96,16 @@ $(BUILDDIR)/LSPLutGeneratorPlugin.o: plugin/core/LSPLutGeneratorPlugin.cpp $(VER
 $(BUILDDIR)/LSPLutGeneratorDescribe.o: plugin/core/LSPLutGeneratorDescribe.cpp plugin/core/LSPLutGeneratorDescribe.h plugin/core/LSPLutGeneratorConstants.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
-$(BUILDDIR)/LSPLutGeneratorProcessor.o: plugin/core/LSPLutGeneratorProcessor.cpp plugin/core/LSPLutGeneratorProcessor.h plugin/core/LSPLutGeneratorPattern.h plugin/core/LSPLutGeneratorConstants.h plugin/metal/LSPLutGeneratorMetalBridge.h | $(BUILDDIR)
+$(BUILDDIR)/LSPLutGeneratorProcessor.o: plugin/core/LSPLutGeneratorProcessor.cpp plugin/core/LSPLutGeneratorProcessor.h plugin/core/LSPLutGeneratorPattern.h plugin/core/LSPLutGeneratorConstants.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 $(BUILDDIR)/LSPLutGeneratorPattern.o: plugin/core/LSPLutGeneratorPattern.cpp plugin/core/LSPLutGeneratorPattern.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
-$(BUILDDIR)/LSPLutGeneratorCube.o: plugin/core/LSPLutGeneratorCube.cpp plugin/core/LSPLutGeneratorCube.h plugin/metal/LSPLutGeneratorMetalCube.h | $(BUILDDIR)
+$(BUILDDIR)/LSPLutGeneratorCube.o: plugin/core/LSPLutGeneratorCube.cpp plugin/core/LSPLutGeneratorCube.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 $(BUILDDIR)/LSPLutGeneratorDialogs.o: plugin/macos/LSPLutGeneratorDialogs.mm plugin/macos/LSPLutGeneratorDialogs.h | $(BUILDDIR)
-	$(CXX) -c $< -o $@ $(CXXFLAGS)
-
-$(BUILDDIR)/LSPLutGeneratorMetalLibrary.o: plugin/metal/LSPLutGeneratorMetalLibrary.mm plugin/metal/LSPLutGeneratorMetalLibrary.h plugin/core/LSPLutGeneratorLog.h | $(BUILDDIR)
-	$(CXX) -c $< -o $@ $(CXXFLAGS)
-
-$(BUILDDIR)/LSPLutGeneratorMetal.o: plugin/metal/LSPLutGeneratorMetal.mm plugin/metal/LSPLutGeneratorMetalBridge.h plugin/metal/LSPLutGeneratorMetalLibrary.h plugin/core/LSPLutGeneratorLog.h | $(BUILDDIR)
-	$(CXX) -c $< -o $@ $(CXXFLAGS)
-
-$(BUILDDIR)/LSPLutGeneratorMetalCube.o: plugin/metal/LSPLutGeneratorMetalCube.mm plugin/metal/LSPLutGeneratorMetalCube.h plugin/metal/LSPLutGeneratorMetalLibrary.h plugin/core/LSPLutGeneratorLog.h | $(BUILDDIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 $(BUILDDIR)/ofxsCore.o: $(OFX_SDK_PATH)/Support/Library/ofxsCore.cpp | $(BUILDDIR)

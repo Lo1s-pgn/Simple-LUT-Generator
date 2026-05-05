@@ -221,8 +221,18 @@ inline void writeErrorLine(const std::string& message) {
     f.flush();
 }
 
+inline void writeInfoLine(const std::string& message) {
+    std::lock_guard<std::mutex> lock(getLogMutex());
+    std::ofstream f;
+    if (!openLogFile(f))
+        return;
+    f << getTimestamp() << " [info] " << message << "\n";
+    f.flush();
+}
+
 } // namespace LSPLutGeneratorLog
 
 #define LSP_LUTGEN_LOG_ERROR(msg) LSPLutGeneratorLog::writeErrorLine(std::string(msg))
+#define LSP_LUTGEN_LOG_INFO(msg) LSPLutGeneratorLog::writeInfoLine(std::string(msg))
 #define LSP_LUTGEN_LOG_SESSION_START(n, v, hn, hl, hver, build, bundle, gpu) \
     LSPLutGeneratorLog::writeSessionStart(std::string(n), std::string(v), std::string(hn), std::string(hl), std::string(hver), std::string(build), std::string(bundle), std::string(gpu))

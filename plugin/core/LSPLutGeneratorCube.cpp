@@ -10,10 +10,6 @@
 #include <filesystem>
 #include <fstream>
 
-#if defined(__APPLE__)
-#include "LSPLutGeneratorMetalCube.h"
-#endif
-
 namespace {
 struct AccumCell {
     double r;
@@ -129,104 +125,69 @@ bool lspLutGenBuildAnalyzedCubeFromLinearBase(const OfxRectI& B, int p_N, const 
     return true;
 }
 
-bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba, bool p_PixelDataIsMetalBuffer) {
+bool lspLutGenBuildAnalyzedCubeForExport(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba) {
     if (!p_GradedStrip || p_N < 2)
         return false;
     if (p_GradedStrip->getPixelDepth() != OFX::eBitDepthFloat)
         return false;
     if (p_GradedStrip->getPixelComponents() != OFX::ePixelComponentRGBA)
         return false;
-    if (!p_GradedStrip->getPixelData())
+    void* pixelData = p_GradedStrip->getPixelData();
+    if (!pixelData)
         return false;
 
     const OfxRectI B = p_GradedStrip->getBounds();
     if (B.x2 <= B.x1 || B.y2 <= B.y1)
         return false;
 
-    const size_t n3 = (size_t)p_N * (size_t)p_N * (size_t)p_N;
+    const int rowBytes = p_GradedStrip->getRowBytes();
 
-#if defined(__APPLE__)
-    {
-        int tx = 0;
-        int ty = 0;
-        lspLutGenPatternGridTxTy(p_N, B.x2 - B.x1, B.y2 - B.y1, &tx, &ty);
-        if (lspLutGenMetalTryBuildAnalyzedCube(p_GradedStrip->getPixelData(),
-                                               p_PixelDataIsMetalBuffer,
-                                               p_GradedStrip->getRowBytes(),
-                                               B.x1,
-                                               B.y1,
-                                               B.x2,
-                                               B.y2,
-                                               p_N,
-                                               tx,
-                                               ty,
-                                               p_OutRgba))
-            return true;
-        if (p_PixelDataIsMetalBuffer) {
-            if (lspLutGenCpuBuildAnalyzedCubeFromMetalBuffer(p_GradedStrip->getPixelData(),
-                                                             p_GradedStrip->getRowBytes(),
-                                                             B.x1,
-                                                             B.y1,
-                                                             B.x2,
-                                                             B.y2,
-                                                             p_N,
-                                                             p_OutRgba))
-                return true;
-            /* Last render was Metal, but this image can be a CPU map in instance-changed. Fall through. */
-        }
-    }
-#endif
+    return lspLutGenBuildAnalyzedCubeFromLinearBase(B, p_N, static_cast<const float*>(pixelData), rowBytes, p_OutRgba);
+}
 
-    std::vector<AccumCell> acc(n3);
+bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<float>& p_OutRgba, bool /*p_PixelDataIsMetalBuffer*/) {
+    return lspLutGenBuildAnalyzedCubeForExport(p_GradedStrip, p_N, p_OutRgba);
+}
 
-    const int nm1 = p_N - 1;
-    for (int y = B.y1; y < B.y2; ++y) {
-        for (int x = B.x1; x < B.x2; ++x) {
-            float ref[4];
-            lspLutGenPatternRGBA(x, y, B, p_N, ref);
-            const float sr = std::clamp(ref[0], 0.0f, 1.0f);
-            const float sg = std::clamp(ref[1], 0.0f, 1.0f);
-            const float sb = std::clamp(ref[2], 0.0f, 1.0f);
-            int ir = static_cast<int>(std::lround(static_cast<double>(sr) * static_cast<double>(nm1)));
-            int ig = static_cast<int>(std::lround(static_cast<double>(sg) * static_cast<double>(nm1)));
-            int ib = static_cast<int>(std::lround(static_cast<double>(sb) * static_cast<double>(nm1)));
-            ir = std::clamp(ir, 0, p_N - 1);
-            ig = std::clamp(ig, 0, p_N - 1);
-            ib = std::clamp(ib, 0, p_N - 1);
-            const size_t idx = (size_t)ir + (size_t)p_N * ((size_t)ig + (size_t)p_N * (size_t)ib);
-            const float* gpx = static_cast<const float*>(p_GradedStrip->getPixelAddress(x, y));
-            if (!gpx)
-                continue;
-            AccumCell& a = acc[idx];
-            a.r += static_cast<double>(gpx[0]);
-            a.g += static_cast<double>(gpx[1]);
-            a.b += static_cast<double>(gpx[2]);
-            a.count += 1;
+bool lspLutGenCopyImageToHostRgba(OFX::Image* p_Image, std::vector<float>& p_OutRgba, OfxRectI& p_OutBounds, int& p_OutRowBytes) {
+    if (!p_Image)
+        return false;
+    if (p_Image->getPixelDepth() != OFX::eBitDepthFloat)
+        return false;
+    if (p_Image->getPixelComponents() != OFX::ePixelComponentRGBA)
+        return false;
+
+    void* pixelData = p_Image->getPixelData();
+    if (!pixelData)
+        return false;
+
+    const OfxRectI B = p_Image->getBounds();
+    const int bw = B.x2 - B.x1;
+    const int bh = B.y2 - B.y1;
+    if (bw < 1 || bh < 1)
+        return false;
+
+    const int rowBytes = p_Image->getRowBytes();
+    const size_t srcRowBytesAbs = (size_t)std::abs(rowBytes);
+    const size_t dstRowBytes = (size_t)bw * 4u * sizeof(float);
+    if (srcRowBytesAbs < dstRowBytes)
+        return false;
+
+    p_OutRgba.resize((size_t)bw * (size_t)bh * 4u);
+    char* dst = reinterpret_cast<char*>(p_OutRgba.data());
+    const char* src = reinterpret_cast<const char*>(pixelData);
+    if (rowBytes > 0) {
+        for (int y = 0; y < bh; ++y)
+            std::memcpy(dst + (size_t)y * dstRowBytes, src + (size_t)y * srcRowBytesAbs, dstRowBytes);
+    } else {
+        for (int y = 0; y < bh; ++y) {
+            const size_t srcRow = (size_t)(bh - 1 - y) * srcRowBytesAbs;
+            std::memcpy(dst + (size_t)y * dstRowBytes, src + srcRow, dstRowBytes);
         }
     }
 
-    p_OutRgba.resize(n3 * 4u);
-    const float inv = 1.0f / static_cast<float>(nm1);
-    for (size_t ib = 0; ib < (size_t)p_N; ++ib) {
-        for (size_t ig = 0; ig < (size_t)p_N; ++ig) {
-            for (size_t ir = 0; ir < (size_t)p_N; ++ir) {
-                const size_t idxCell = ir + (size_t)p_N * (ig + (size_t)p_N * ib);
-                const size_t o = idxCell * 4u;
-                const AccumCell& a = acc[idxCell];
-                if (a.count > 0) {
-                    const double invc = 1.0 / static_cast<double>(a.count);
-                    p_OutRgba[o + 0] = static_cast<float>(a.r * invc);
-                    p_OutRgba[o + 1] = static_cast<float>(a.g * invc);
-                    p_OutRgba[o + 2] = static_cast<float>(a.b * invc);
-                } else {
-                    p_OutRgba[o + 0] = static_cast<float>(ir) * inv;
-                    p_OutRgba[o + 1] = static_cast<float>(ig) * inv;
-                    p_OutRgba[o + 2] = static_cast<float>(ib) * inv;
-                }
-                p_OutRgba[o + 3] = 1.0f;
-            }
-        }
-    }
+    p_OutBounds = B;
+    p_OutRowBytes = static_cast<int>(dstRowBytes);
     return true;
 }
 
@@ -234,11 +195,6 @@ bool lspLutGenBuildAnalyzedCube(OFX::Image* p_GradedStrip, int p_N, std::vector<
 bool lspLutGenDownsampleCubeRgba(const float* p_SrcRgba, int p_NSrc, int p_NDst, std::vector<float>& p_OutRgba) {
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2 || (p_NSrc % p_NDst) != 0)
         return false;
-
-#if defined(__APPLE__)
-    if (lspLutGenMetalTryDownsampleCube(p_SrcRgba, p_NSrc, p_NDst, p_OutRgba))
-        return true;
-#endif
 
     const int s = p_NSrc / p_NDst;
     const double invVol = 1.0 / static_cast<double>(s * s * s);
@@ -279,11 +235,6 @@ bool lspLutGenResampleCubeRgbaTrilinear(const float* p_SrcRgba, int p_NSrc, int 
     if (!p_SrcRgba || p_NSrc < 2 || p_NDst < 2)
         return false;
 
-#if defined(__APPLE__)
-    if (lspLutGenMetalTryResampleCubeTrilinear(p_SrcRgba, p_NSrc, p_NDst, p_OutRgba))
-        return true;
-#endif
-
     const double srcNm1 = static_cast<double>(p_NSrc - 1);
     const double dstNm1 = static_cast<double>(p_NDst - 1);
     const size_t nOut3 = (size_t)p_NDst * (size_t)p_NDst * (size_t)p_NDst;
@@ -319,6 +270,51 @@ static std::string lspLutGenTrimCopyForExportPath(const std::string& s) {
     return s.substr(a, b - a);
 }
 
+static int lspLutGenHexNibble(char c) {
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return 10 + (c - 'a');
+    if (c >= 'A' && c <= 'F')
+        return 10 + (c - 'A');
+    return -1;
+}
+
+static std::string lspLutGenDecodeUrlEscapes(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (s[i] == '%' && i + 2 < s.size()) {
+            const int hi = lspLutGenHexNibble(s[i + 1]);
+            const int lo = lspLutGenHexNibble(s[i + 2]);
+            if (hi >= 0 && lo >= 0) {
+                out.push_back(static_cast<char>((hi << 4) | lo));
+                i += 2;
+                continue;
+            }
+        }
+        out.push_back(s[i]);
+    }
+    return out;
+}
+
+static std::string lspLutGenNormalizeExportDirectory(const std::string& p_RawDir) {
+    std::string d = lspLutGenTrimCopyForExportPath(p_RawDir);
+    if (d.empty())
+        return d;
+    // Resolve sometimes stores directory params as file URLs.
+    if (d.rfind("file://", 0) == 0)
+        d = d.substr(7);
+    d = lspLutGenDecodeUrlEscapes(d);
+    // Expand "~/" for typed paths.
+    if (d.size() >= 2 && d[0] == '~' && d[1] == '/') {
+        const char* home = std::getenv("HOME");
+        if (home && home[0] != '\0')
+            d = std::string(home) + d.substr(1);
+    }
+    return d;
+}
+
 static std::string lspLutGenSanitizeExportBaseName(const std::string& p_Raw) {
     std::string t = lspLutGenTrimCopyForExportPath(p_Raw);
     if (t.size() >= 5) {
@@ -345,7 +341,7 @@ static std::string lspLutGenSanitizeExportBaseName(const std::string& p_Raw) {
 
 std::string lspLutGenMakeUniqueNumberedCubePath(const std::string& p_Directory, const std::string& p_RawFileBase) {
     namespace fs = std::filesystem;
-    const std::string dirTrim = lspLutGenTrimCopyForExportPath(p_Directory);
+    const std::string dirTrim = lspLutGenNormalizeExportDirectory(p_Directory);
     if (dirTrim.empty())
         return "";
     const std::string stem = lspLutGenSanitizeExportBaseName(p_RawFileBase);

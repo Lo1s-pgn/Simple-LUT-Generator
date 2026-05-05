@@ -11,8 +11,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cxxabi.h>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 namespace {
@@ -48,6 +51,7 @@ public:
 private:
     void updateModeDependentUi();
     void runAnalyzeExportLut(double p_Time);
+    void updateAnalyzeCache(OFX::Image* p_SrcImg);
 
     OFX::Clip* m_DstClip;
     OFX::Clip* m_SrcClip;
@@ -57,8 +61,11 @@ private:
     OFX::StringParam* m_ExportFileBase;
     OFX::PushButtonParam* m_ExportLutSetPath;
     OFX::PushButtonParam* m_ExportLut;
-    /** True when OFX Metal render is active (kOfxImagePropData is id<MTLBuffer>, not a CPU pointer). */
-    bool m_InstanceMetalPixelData{false};
+    std::mutex m_AnalyzeCacheMutex;
+    std::vector<float> m_AnalyzeCacheRgba;
+    OfxRectI m_AnalyzeCacheBounds{0, 0, 0, 0};
+    int m_AnalyzeCacheRowBytes{0};
+    bool m_HasAnalyzeCache{false};
 };
 
 LSPLutGeneratorPlugin::LSPLutGeneratorPlugin(OfxImageEffectHandle p_Handle)
@@ -162,7 +169,30 @@ void LSPLutGeneratorPlugin::changedParam(const OFX::InstanceChangedArgs& p_Args,
 
     if (!lspLutParamLeafIs(p_ParamName, "exportLut"))
         return;
-    runAnalyzeExportLut(p_Args.time);
+    try {
+        runAnalyzeExportLut(p_Args.time);
+    } catch (const OFX::Exception::Suite& e) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_ofx_suite: status=") + std::to_string(static_cast<int>(e.status())) + " " + (e.what() ? e.what() : ""));
+    } catch (const OFX::Exception::PropertyUnknownToHost& e) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_ofx_property_unknown: ") + (e.what() ? e.what() : ""));
+    } catch (const OFX::Exception::PropertyValueIllegalToHost& e) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_ofx_property_illegal: ") + (e.what() ? e.what() : ""));
+    } catch (const OFX::Exception::TypeRequest& e) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_ofx_type_request: ") + (e.what() ? e.what() : ""));
+    } catch (const OFX::Exception::HostInadequate& e) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_ofx_host_inadequate: ") + (e.what() ? e.what() : ""));
+    } catch (const std::exception& e) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_exception: ") + e.what());
+    } catch (...) {
+        std::string typeName = "unknown";
+        if (const std::type_info* ti = abi::__cxa_current_exception_type()) {
+            int status = 0;
+            char* demangled = abi::__cxa_demangle(ti->name(), nullptr, nullptr, &status);
+            typeName = (status == 0 && demangled) ? demangled : ti->name();
+            std::free(demangled);
+        }
+        LSP_LUTGEN_LOG_ERROR(std::string("export_exception_unknown type=") + typeName);
+    }
 }
 
 void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
@@ -176,6 +206,7 @@ void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
     m_ExportFolder->getValue(exportFolder);
     std::string fileBase;
     m_ExportFileBase->getValue(fileBase);
+    LSP_LUTGEN_LOG_INFO(std::string("export_request: folder='") + exportFolder + "' base='" + fileBase + "'");
     if (exportFolder.empty()) {
         const std::string msg = "Set an export folder in Export path (or use Set path file).";
         try {
@@ -187,6 +218,7 @@ void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
     }
     const std::string outPath = lspLutGenMakeUniqueNumberedCubePath(exportFolder, fileBase);
     if (outPath.empty()) {
+        LSP_LUTGEN_LOG_ERROR(std::string("export_bad_folder: '") + exportFolder + "'");
         const std::string msg = "The export path is not a valid, existing folder:\n" + exportFolder
             + "\n\nCheck the path, or use Set path file to choose a folder.";
         try {
@@ -197,40 +229,28 @@ void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
         return;
     }
 
-    std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(t));
-    if (!src.get() || !src->getPixelData()) {
-        const double tFallback = timeLineGetTime();
-        if (tFallback != t)
-            src.reset(m_SrcClip->fetchImage(tFallback));
+    std::vector<float> analyzeFrame;
+    OfxRectI analyzeBounds = {0, 0, 0, 0};
+    int analyzeRowBytes = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_AnalyzeCacheMutex);
+        if (m_HasAnalyzeCache) {
+            analyzeFrame = m_AnalyzeCacheRgba;
+            analyzeBounds = m_AnalyzeCacheBounds;
+            analyzeRowBytes = m_AnalyzeCacheRowBytes;
+        }
     }
-    if (!src.get() || !src->getPixelData()) {
-        const char* msg = "Export LUT: could not read the Source image at the current time.\n"
-            "Scrub the playhead over the clip, then try again.";
+    if (analyzeFrame.empty() || analyzeRowBytes <= 0) {
+        const char* msg = "Export LUT: no analyzed frame is cached yet.\n"
+            "Scrub the playhead over the clip in Analyze mode, then try again.";
         try {
-            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportNoSource", std::string(msg));
+            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportNoCachedSource", std::string(msg));
         } catch (const OFX::Exception::Suite&) {
-            LSP_LUTGEN_LOG_ERROR("export_no_source_no_message_suite");
+            LSP_LUTGEN_LOG_ERROR("export_no_cached_source_no_message_suite");
         }
         return;
     }
-    if (src->getPixelDepth() != OFX::eBitDepthFloat) {
-        try {
-            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportBitDepth", std::string("Source must be 32-bit float (RGB)."));
-        } catch (const OFX::Exception::Suite&) {
-            LSP_LUTGEN_LOG_ERROR("export_bit_depth_no_message_suite");
-        }
-        return;
-    }
-    if (src->getPixelComponents() != OFX::ePixelComponentRGBA) {
-        try {
-            sendMessage(OFX::Message::eMessageWarning, "lspLutGenExportComponents", std::string("Source must be RGBA for export."));
-        } catch (const OFX::Exception::Suite&) {
-            LSP_LUTGEN_LOG_ERROR("export_components_no_message_suite");
-        }
-        return;
-    }
-
-    const OfxRectI sb = src->getBounds();
+    const OfxRectI sb = analyzeBounds;
     const int fw = sb.x2 - sb.x1;
     const int fh = sb.y2 - sb.y1;
     if (fw < 1 || fh < 1)
@@ -267,7 +287,7 @@ void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
     const int nSolve = (nCap >= 2) ? nCap : 2;
 
     std::vector<float> cubeFull;
-    if (!lspLutGenBuildAnalyzedCube(src.get(), nSolve, cubeFull, m_InstanceMetalPixelData)) {
+    if (!lspLutGenBuildAnalyzedCubeFromLinearBase(analyzeBounds, nSolve, analyzeFrame.data(), analyzeRowBytes, cubeFull)) {
         try {
             sendMessage(OFX::Message::eMessageError, "lspLutGenBuildCubeFailed", std::string("Could not build the analyzed 3D LUT from the frame."));
         } catch (const OFX::Exception::Suite&) {
@@ -314,6 +334,20 @@ void LSPLutGeneratorPlugin::runAnalyzeExportLut(double t) {
     }
 }
 
+void LSPLutGeneratorPlugin::updateAnalyzeCache(OFX::Image* p_SrcImg) {
+    std::vector<float> cacheRgba;
+    OfxRectI cacheBounds = {0, 0, 0, 0};
+    int cacheRowBytes = 0;
+    if (!lspLutGenCopyImageToHostRgba(p_SrcImg, cacheRgba, cacheBounds, cacheRowBytes))
+        return;
+
+    std::lock_guard<std::mutex> lock(m_AnalyzeCacheMutex);
+    m_AnalyzeCacheRgba.swap(cacheRgba);
+    m_AnalyzeCacheBounds = cacheBounds;
+    m_AnalyzeCacheRowBytes = cacheRowBytes;
+    m_HasAnalyzeCache = true;
+}
+
 void LSPLutGeneratorPlugin::beginEdit() {
     OFX::ImageEffect::beginEdit();
     updateModeDependentUi();
@@ -325,12 +359,11 @@ void LSPLutGeneratorPlugin::endChanged(OFX::InstanceChangeReason p_Reason) {
 }
 
 void LSPLutGeneratorPlugin::beginSequenceRender(const OFX::BeginSequenceRenderArguments& p_Args) {
-    m_InstanceMetalPixelData = p_Args.isEnabledMetalRender;
+    (void)p_Args;
     OFX::ImageEffect::beginSequenceRender(p_Args);
 }
 
 void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
-    m_InstanceMetalPixelData = p_Args.isEnabledMetalRender;
     // Generate: fill with pattern at max feasible N. Analyze: copy source → output.
     std::unique_ptr<OFX::Image> dst(m_DstClip->fetchImage(p_Args.time));
     std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(p_Args.time));
@@ -350,6 +383,8 @@ void LSPLutGeneratorPlugin::render(const OFX::RenderArguments& p_Args) {
 
     int mode = 0;
     m_OperationMode->getValueAtTime(p_Args.time, mode);
+    if (mode == kOperationModeAnalyze)
+        updateAnalyzeCache(src.get());
 
     const OfxRectI db = dst->getBounds();
     const int fw = db.x2 - db.x1;
@@ -387,7 +422,7 @@ void LSPLutGeneratorPluginFactory::describe(OFX::ImageEffectDescriptor& p_Desc) 
     p_Desc.setTemporalClipAccess(false);
     p_Desc.setRenderTwiceAlways(false);
     p_Desc.setSupportsMultipleClipPARs(kSupportsMultipleClipPARs);
-    p_Desc.setSupportsMetalRender(true);
+    p_Desc.setSupportsMetalRender(false);
 }
 
 void LSPLutGeneratorPluginFactory::describeInContext(OFX::ImageEffectDescriptor& p_Desc, OFX::ContextEnum p_Context) {
