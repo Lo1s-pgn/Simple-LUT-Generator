@@ -120,7 +120,7 @@ Release builds are **not signed or notarized**. After you copy the bundle into a
 Use the path where you actually installed the bundle. Example for the system folder:
 
 ```bash
-BUNDLE="/Library/OFX/Plugins/LSP_Simple_LUT_Generator_<version>.ofx.bundle"
+BUNDLE="/Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.9.ofx.bundle"
 
 sudo chmod -R 755 "$BUNDLE"
 sudo chown -R root:wheel "$BUNDLE"
