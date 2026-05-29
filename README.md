@@ -137,7 +137,6 @@ sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_Simple_LUT_Generato
 sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_Simple_LUT_Generator_<version>.ofx.bundle
 ```
 
-For distribution, use a **Developer ID** certificate and notarization instead.
 
 ## Repository layout
 

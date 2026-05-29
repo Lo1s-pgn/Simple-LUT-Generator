@@ -20,7 +20,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Read VERSION triplet
         id: version
@@ -38,7 +38,7 @@ jobs:
           test -d "release/LSP_Simple_LUT_Generator_${{ steps.version.outputs.triplet }}_macos"
 
       - name: Upload macOS release folder
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: LSP_Simple_LUT_Generator_${{ steps.version.outputs.triplet }}_macos
           path: release/LSP_Simple_LUT_Generator_${{ steps.version.outputs.triplet }}_macos/
@@ -55,30 +55,28 @@ jobs:
 
   build-windows:
     name: Windows
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Read VERSION triplet
         id: version
         shell: bash
         run: echo "triplet=$(head -n1 VERSION | tr -d '\r' | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
       - name: Configure and build
         shell: cmd
         run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+            call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          )
           cmake -S . -B build/windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
           cmake --build build/windows --target lutgen_all --parallel
           if not exist "release\LSP_Simple_LUT_Generator_${{ steps.version.outputs.triplet }}_windows" exit /b 1
 
       - name: Upload Windows release folder
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: LSP_Simple_LUT_Generator_${{ steps.version.outputs.triplet }}_windows
           path: release/LSP_Simple_LUT_Generator_${{ steps.version.outputs.triplet }}_windows/
