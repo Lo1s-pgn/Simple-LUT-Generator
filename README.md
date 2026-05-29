@@ -71,26 +71,9 @@ cmake -S . -B build/windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPIL
 cmake --build build/windows --target lutgen_all
 ```
 
-## Release builds (GitHub Actions)
+## GitHub Actions
 
-To build **macOS and Windows** in the cloud **without publishing automatically**:
-
-1. Commit and **push** the revision you want built (the workflow uses the branch you select on GitHub, not uncommitted local files).
-2. Open the repo on [github.com](https://github.com) → **Actions** → **Build OFX release**.
-3. Click **Run workflow**, choose the branch (usually `main`), optionally toggle **macOS universal binary**, then **Run workflow**.
-4. When the jobs finish, open **that workflow run** (click the run title, e.g. “Build OFX release #2”) and scroll to the bottom → **Artifacts** → download:
-   - `LSP_Simple_LUT_Generator_<version>_macos`
-   - `LSP_Simple_LUT_Generator_<version>_windows`
-
-   Artifacts are attached to each run, not to the repo home page or Releases tab. If one job failed, only the successful job’s artifact appears (e.g. Windows may be available even when macOS failed).
-
-   From [run #1](https://github.com/Lo1s-pgn/Simple-LUT-Generator/actions/runs/26659697244): the Windows artifact **`LSP_Simple_LUT_Generator_1.0.8_windows`** was uploaded; macOS failed before upload.
-
-Each artifact is the full versioned release folder (contains the `.ofx.bundle`).
-
-This workflow runs **only when you click Run workflow**. It does **not** run on push, tags, or local archive.
-
-Local archive / version bumps that stay on your Mac do not trigger any GitHub build.
+This repo includes build workflows on GitHub Actions. **Build OFX release** builds macOS and Windows in one run (two jobs, two artifacts).
 
 ## Installation
 
@@ -128,16 +111,41 @@ Use the bundle inside **`release/LSP_Simple_LUT_Generator_<version>_windows/`**.
 
 Use **Open Log** in the plug-in SUPPORT section.
 
-## macOS Gatekeeper (unsigned local builds)
+## macOS Gatekeeper (unsigned builds)
 
-For ad-hoc signing after install:
+Release builds are **not signed or notarized**. After you copy the bundle into an OFX folder, macOS may block it from loading in Resolve.
+
+### Method 1 — Terminal (recommended)
+
+Use the path where you actually installed the bundle. Example for the system folder:
 
 ```bash
-sudo xattr -dr com.apple.quarantine /Library/OFX/Plugins/LSP_Simple_LUT_Generator_<version>.ofx.bundle
-sudo codesign --force --deep --sign - /Library/OFX/Plugins/LSP_Simple_LUT_Generator_<version>.ofx.bundle
+BUNDLE="/Library/OFX/Plugins/LSP_Simple_LUT_Generator_<version>.ofx.bundle"
+
+sudo chmod -R 755 "$BUNDLE"
+sudo chown -R root:wheel "$BUNDLE"
+sudo xattr -dr com.apple.quarantine "$BUNDLE"
+sudo codesign --force --deep --sign - "$BUNDLE"
 ```
 
+For a **user-only** install (`~/Library/OFX/Plugins/...`), use that path in `BUNDLE` and **skip** the `chown root:wheel` line.
 
+When `sudo` asks for your password, type it and press **Enter** (nothing appears on screen — that is normal).
+
+Quit Resolve completely, then reopen it.
+
+### Method 2 — System Settings (no Terminal)
+
+1. Copy a fresh bundle into `/Library/OFX/Plugins/` (or `~/Library/OFX/Plugins/`).
+2. Launch Resolve. If macOS shows a security warning, click **Done**.
+3. Open **System Settings → Privacy & Security**, scroll down, and click **Allow Anyway** next to the blocked plug-in.
+4. In Resolve: **DaVinci Resolve → Preferences → Video Plugins**, find **LSP - Simple LUT Generator**, enable it, save, and quit Resolve.
+5. Launch Resolve again. When prompted, click **Open Anyway** and enter your Mac password.
+
+### Notes
+
+- If your Mac account has **no login password**, the **Open Anyway** step may not work reliably — use Method 1 instead.
+- If still missing in Resolve, elete the OFX cache (path in [Installation](#installation) above) and relaunch.
 ## Repository layout
 
 ```
