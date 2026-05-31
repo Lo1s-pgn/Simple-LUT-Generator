@@ -17,10 +17,10 @@
 
 Build on each platform separately. Each build writes a **versioned, platform-tagged release folder** containing the `.ofx.bundle`:
 
-| Platform | Release folder (example for v1.0.7) | Inside the bundle |
+| Platform | Release folder | Inside the bundle |
 |----------|-------------------------------------|-------------------|
-| macOS | `release/LSP_Simple_LUT_Generator_1.0.7_macos/` | `Contents/MacOS/<name>.ofx` |
-| Windows | `release/LSP_Simple_LUT_Generator_1.0.7_windows/` | `Contents/Win64/<name>.ofx` |
+| macOS | `release/LSP_Simple_LUT_Generator_<version>_macos/` | `Contents/MacOS/<name>.ofx` |
+| Windows | `release/LSP_Simple_LUT_Generator_<version>_windows/` | `Contents/Win64/<name>.ofx` |
 
 Pattern: **`LSP_Simple_LUT_Generator_<version>_<platform>/`**
 
@@ -120,7 +120,7 @@ Release builds are **not signed or notarized**. After you copy the bundle into a
 Use the path where you actually installed the bundle. Example for the system folder:
 
 ```bash
-BUNDLE="/Library/OFX/Plugins/LSP_Simple_LUT_Generator_1.0.9.ofx.bundle"
+BUNDLE="/Library/OFX/Plugins/LSP_Simple_LUT_Generator_<version>.ofx.bundle"
 
 sudo chmod -R 755 "$BUNDLE"
 sudo chown -R root:wheel "$BUNDLE"
